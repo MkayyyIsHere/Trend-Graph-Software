@@ -622,11 +622,18 @@ def register_callbacks(app, state, temp_dir: str):
             state.batch_result  = result
             state.batch_running = False
 
+        # Capture current UI chart settings so workers use the same
+        # resolution/dpi even though they reload configs from disk.
+        cc = state.config.get_chart_config()
+        override_chart = {
+            k: cc[k] for k in ('dpi', 'resolution_px', 'figure_size') if k in cc
+        } or None
+
         threading.Thread(
             target=_run_batch_worker,
             args=(config_files, data_files, event_path, out_folder, total, n_workers,
                   state.logger, state.gantt_config, state.batch_log,
-                  state.batch_stop_event, _done),
+                  state.batch_stop_event, _done, override_chart),
             daemon=True,
         ).start()
 

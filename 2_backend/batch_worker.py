@@ -8,38 +8,48 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Callable
 
-import matplotlib.pyplot as plt
-
 from backend.processors import SeriesDataProcessor, EventDataProcessor
 from backend.config import ConfigManager, GanttConfigManager
-from backend.chart_gen import CompositeChartGenerator, _build_output_filename
-from utils.constants import DEFAULT_DPI
+from backend.chart_gen import _build_output_filename
+from backend.plotly_preview import build_plotly_figure
+from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE
 
 
 def run_batch(
-    config_files:  List[str],
-    data_files:    List[str],
-    event_file:    str,
-    out_folder:    str,
-    total:         int,
-    n_workers:     int,
-    logger,                       # GUILogger instance
-    gantt_config:  GanttConfigManager,
-    batch_log:     List[str],     # shared list — append to update the UI
-    stop_event:    threading.Event,
-    on_done:       Callable,      # called with result dict when finished
+    config_files:   List[str],
+    data_files:     List[str],
+    event_file:     str,
+    out_folder:     str,
+    total:          int,
+    n_workers:      int,
+    logger,                        # GUILogger instance
+    gantt_config:   GanttConfigManager,
+    batch_log:      List[str],     # shared list — append to update the UI
+    stop_event:     threading.Event,
+    on_done:        Callable,      # called with result dict when finished
+    override_chart: dict = None,   # UI-applied chart overrides (dpi, resolution_px, figure_size)
 ):
     """
     Runs the full batch render in a background thread.
+    Exports Plotly figures as static PNGs via kaleido.
     All state is passed in explicitly — no DashApp reference needed.
+
+    override_chart: if provided, these keys are merged into each config's
+                    'chart' section after loading from disk, so UI settings
+                    (resolution, dpi) take precedence over the JSON values.
     """
-    blog = batch_log.append      # shorthand, same as original self._batch_log.append
+    blog = batch_log.append
 
     blog("=" * 55)
     blog(f"BATCH STARTED — {total} chart(s), {n_workers} parallel workers")
     blog(f"  Data files  : {len(data_files)}")
     blog(f"  Config files: {len(config_files)}")
     blog(f"  Output      : {out_folder}")
+    if override_chart:
+        res = override_chart.get('resolution_px')
+        dpi = override_chart.get('dpi')
+        if res:
+            blog(f"  Resolution  : {res[0]}×{res[1]} px @ {dpi} DPI (from UI settings)")
     blog("=" * 55)
 
     # Load event/task data ONCE — shared across all workers (read-only)
@@ -64,7 +74,7 @@ def run_batch(
     lock       = threading.Lock()
 
     def _render_one(item):
-        """Worker: load data + config, render chart, save. Returns (out_name, err_or_None)."""
+        """Worker: load data + config, build Plotly figure, save as PNG via kaleido."""
         data_path, cfg_path, out_path, out_name = item
         cfg_name  = os.path.basename(cfg_path)
         data_name = os.path.basename(data_path)
@@ -73,10 +83,16 @@ def run_batch(
         if not cfg.config:
             return out_name, f"SKIPPED (invalid config): {cfg_name}"
 
+        # Apply UI-level overrides (resolution/dpi) on top of the JSON values.
+        # This ensures that settings changed in the Settings modal are honoured
+        # even though each worker reloads the config fresh from disk.
+        if override_chart:
+            cfg.config.setdefault('chart', {}).update(override_chart)
+
         all_dp = []
         for sc in cfg.get_all_series_configs():
             proc = SeriesDataProcessor(
-                logger=logger,                                     # ← was self._logger
+                logger=logger,
                 value_column=sc.get('value_column'),
                 value_column_keywords=sc.get('value_column_keywords', ['value']),
             )
@@ -88,20 +104,26 @@ def run_batch(
             all_dp.append(pts)
 
         try:
-            # Each worker uses its own GanttConfigManager to avoid shared color_index
+            # Each worker gets its own GanttConfigManager to avoid shared color_index
             gantt_copy = GanttConfigManager(
-                gantt_config.config_path                           # ← was self._gantt_config
+                gantt_config.config_path
                 if gantt_config.is_loaded() else None)
-            gen = CompositeChartGenerator(cfg, logger, gantt_copy) # ← was self._logger
-            if gen.generate(all_dp, tasks):
-                dpi = cfg.get_chart_config().get('dpi', DEFAULT_DPI)
-                gen.fig.savefig(out_path, dpi=dpi, bbox_inches=None,
-                                facecolor='white', edgecolor='none', pad_inches=0)
-                plt.close(gen.fig)
-                return out_name, None   # success
-            else:
-                if gen.fig: plt.close(gen.fig)
-                return out_name, f"FAILED (chart gen): {out_name}"
+
+            fig = build_plotly_figure(cfg, all_dp, tasks, gantt_copy)
+
+            # Derive exact pixel dimensions from config (same as Matplotlib).
+            # Plotly/kaleido accepts width & height in pixels directly;
+            # scale=1 means no further multiplication is applied.
+            cc         = cfg.get_chart_config()
+            dpi        = cc.get('dpi', DEFAULT_DPI)
+            fig_size   = cc.get('figure_size', DEFAULT_FIGURE_SIZE)
+            width_px   = int(round(fig_size[0] * dpi))
+            height_px  = int(round(fig_size[1] * dpi))
+
+            fig.write_image(out_path, format='png',
+                            width=width_px, height=height_px, scale=1)
+            return out_name, None   # success
+
         except Exception as e:
             return out_name, f"ERROR: {out_name} — {e}\n{traceback.format_exc()}"
 
@@ -110,7 +132,7 @@ def run_batch(
         stopped = False
         for future in as_completed(futures):
             # Check E-stop between completed futures
-            if stop_event.is_set() and not stopped:             # ← was self._batch_stop_event
+            if stop_event.is_set() and not stopped:
                 stopped = True
                 blog("⚠ E-Stop signal received — cancelling remaining queued charts…")
                 cancelled = sum(1 for f in futures if f.cancel())
@@ -139,7 +161,7 @@ def run_batch(
     blog(f"Output: {out_folder}")
     blog("=" * 55)
 
-    on_done({                                                     # ← was self._batch_result = {...}
+    on_done({
         'failed':     False,
         'stopped':    stopped,
         'done':       done_count,
