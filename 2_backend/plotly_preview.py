@@ -122,10 +122,28 @@ def build_plotly_figure(config: ConfigManager,
             'fill': fill_rgba, 'edge': edge_rgba,
         })
 
-        # Colored band (below data lines)
+        # Colored band (below data lines) — no border on vrect itself
         fig.add_vrect(
             x0=task.start_time, x1=task.end_time,
             fillcolor=fill_rgba,
+            line=dict(width=0),
+            layer='below',
+        )
+        # Left edge only
+        fig.add_shape(
+            type='line',
+            x0=task.start_time, x1=task.start_time,
+            y0=0, y1=1,
+            xref='x', yref='paper',
+            line=dict(color=edge_rgba, width=1),
+            layer='below',
+        )
+        # Right edge only
+        fig.add_shape(
+            type='line',
+            x0=task.end_time, x1=task.end_time,
+            y0=0, y1=1,
+            xref='x', yref='paper',
             line=dict(color=edge_rgba, width=1),
             layer='below',
         )
