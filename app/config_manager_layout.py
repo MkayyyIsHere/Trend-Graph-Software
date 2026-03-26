@@ -1,0 +1,488 @@
+"""app/config_manager_layout.py — Layout for the ⚙️ Config Manager tab."""
+
+from dash import dcc, html
+import dash_bootstrap_components as dbc
+
+# ── Colour palettes available for bulk-apply ────────────────────────────────
+COLOUR_PALETTES = {
+    "Matplotlib Tab10": [
+        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+    ],
+    "Plotly Default": [
+        "#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+        "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52",
+    ],
+    "Seaborn Deep": [
+        "#4C72B0", "#DD8452", "#55A868", "#C44E52", "#8172B3",
+        "#937860", "#DA8BC3", "#8C8C8C", "#CCB974", "#64B5CD",
+    ],
+    "Vibrant Contrast": [
+        "#E63946", "#457B9D", "#2A9D8F", "#E9C46A", "#F4A261",
+        "#264653", "#A8DADC", "#F1FAEE", "#6D6875", "#B5838D",
+    ],
+}
+
+LINESTYLES  = ["-", "--", "-.", ":", "None"]
+MARKERS     = ["none", "o", "s", "^", "v", "D", "x", "+", "*"]
+
+
+def _series_row(idx: int, s: dict = None) -> dbc.Card:
+    """Build one series card row for the editor."""
+    s = s or {}
+    i = idx
+    color_val = s.get("line_color", "#1f77b4")
+
+    return dbc.Card(className="mb-2 border-secondary", id=f"series-card-{i}", children=[
+        dbc.CardHeader(
+            dbc.Row([
+                dbc.Col(html.B(f"Series {i + 1}", id=f"series-title-{i}",
+                               className="small"), width="auto"),
+                dbc.Col(
+                    dbc.Button("✕ Remove", id={"type": "btn-remove-series", "index": i},
+                               color="danger", size="sm", outline=True,
+                               className="float-end"),
+                    className="ms-auto", width="auto"
+                ),
+            ], align="center")
+        ),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Name", className="small fw-semibold"),
+                    dbc.Input(id={"type": "series-name", "index": i},
+                              value=s.get("name", ""), placeholder="e.g. P Avg A", size="sm"),
+                ], width=3),
+                dbc.Col([
+                    dbc.Label("Value Column", className="small fw-semibold"),
+                    dbc.Input(id={"type": "series-value-col", "index": i},
+                              value=s.get("value_column", ""),
+                              placeholder="e.g. PowerPfund_A_avg", size="sm"),
+                ], width=3),
+                dbc.Col([
+                    dbc.Label("Keywords (comma-separated)", className="small fw-semibold"),
+                    dbc.Input(id={"type": "series-keywords", "index": i},
+                              value=", ".join(s.get("value_column_keywords", [])),
+                              placeholder="e.g. PowerPfund_A_avg", size="sm"),
+                ], width=4),
+                dbc.Col([
+                    dbc.Label("Alpha", className="small fw-semibold"),
+                    dbc.Input(id={"type": "series-alpha", "index": i},
+                              value=s.get("alpha", 0.65), type="number",
+                              min=0.0, max=1.0, step=0.05, size="sm"),
+                ], width=2),
+            ], className="mb-2"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Colour", className="small fw-semibold"),
+                    html.Div([
+                        dbc.Input(id={"type": "series-color-swatch", "index": i},
+                                  type="color", value=color_val,
+                                  style={"width": "38px", "height": "31px",
+                                         "padding": "2px", "border": "1px solid #ced4da",
+                                         "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
+                        dbc.Input(id={"type": "series-color-hex", "index": i},
+                                  value=color_val, placeholder="#rrggbb", size="sm",
+                                  style={"borderRadius": "0 4px 4px 0",
+                                         "fontFamily": "monospace", "width": "95px"}),
+                    ], className="d-flex"),
+                ], width=3),
+                dbc.Col([
+                    dbc.Label("Line Width", className="small fw-semibold"),
+                    dbc.Input(id={"type": "series-linewidth", "index": i},
+                              value=s.get("linewidth", 1.5), type="number",
+                              min=0.5, max=10.0, step=0.5, size="sm"),
+                ], width=2),
+                dbc.Col([
+                    dbc.Label("Line Style", className="small fw-semibold"),
+                    dbc.Select(id={"type": "series-linestyle", "index": i},
+                               options=[{"label": ls, "value": ls} for ls in LINESTYLES],
+                               value=s.get("linestyle", "-"), size="sm"),
+                ], width=2),
+                dbc.Col([
+                    dbc.Label("Marker", className="small fw-semibold"),
+                    dbc.Select(id={"type": "series-marker", "index": i},
+                               options=[{"label": m, "value": m} for m in MARKERS],
+                               value=s.get("marker", "none"), size="sm"),
+                ], width=2),
+            ]),
+        ], className="py-2"),
+    ])
+
+
+def _editor_modal_body():
+    """Return the scrollable modal body — all config sections."""
+    return [
+        # ── Filename ────────────────────────────────────────────────────────
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Filename (.json)", className="fw-semibold"),
+                dbc.Input(id="cfg-filename",
+                          placeholder="e.g. 0_config_composite_Active_Power.json",
+                          size="sm"),
+                html.Small("File will be saved to the selected config folder.",
+                           className="text-muted"),
+            ]),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Metadata ────────────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("📝 Metadata", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Description", className="small fw-semibold"),
+                dbc.Textarea(id="cfg-description", rows=2, size="sm",
+                             placeholder="Brief description of this config…"),
+            ], width=6),
+            dbc.Col([
+                dbc.Label("Usage Notes", className="small fw-semibold"),
+                dbc.Textarea(id="cfg-usage", rows=2, size="sm",
+                             placeholder="Usage instructions…"),
+            ], width=6),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Series ──────────────────────────────────────────────────────────
+        dbc.Row([
+            dbc.Col(html.H6("📈 Series", className="fw-bold text-primary"), width="auto"),
+            dbc.Col(
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Select(id="cfg-palette-select",
+                                   options=[{"label": k, "value": k}
+                                            for k in COLOUR_PALETTES],
+                                   placeholder="Apply colour palette…",
+                                   size="sm"),
+                        width=True,
+                    ),
+                    dbc.Col(
+                        dbc.Button("Apply Palette", id="btn-apply-palette",
+                                   color="info", size="sm", outline=True),
+                        width="auto",
+                    ),
+                ], align="center", className="g-2"),
+                className="ms-auto", width=6,
+            ),
+        ], align="center", className="mb-2"),
+
+        html.Div(id="cfg-series-container", children=[]),
+
+        dbc.Button("➕ Add Series", id="btn-add-series", color="secondary",
+                   size="sm", outline=True, className="mb-3 mt-1"),
+
+        # Hidden store for series count
+        dcc.Store(id="store-series-count", data=0),
+
+        html.Hr(className="my-2"),
+
+        # ── Chart ───────────────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("🖼️ Chart", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Title", className="small fw-semibold"),
+                dbc.Input(id="cfg-chart-title",
+                          placeholder="e.g. Active Power Over Time", size="sm"),
+            ], width=6),
+            dbc.Col([
+                dbc.Label("Background Colour", className="small fw-semibold"),
+                html.Div([
+                    dbc.Input(id="cfg-bg-color-swatch", type="color", value="#ffffff",
+                              style={"width": "38px", "height": "31px", "padding": "2px",
+                                     "border": "1px solid #ced4da",
+                                     "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
+                    dbc.Input(id="cfg-bg-color-hex", value="#ffffff", size="sm",
+                              style={"borderRadius": "0 4px 4px 0",
+                                     "fontFamily": "monospace", "width": "95px"}),
+                ], className="d-flex"),
+            ], width=3),
+        ], className="mb-2"),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Width (px)", className="small fw-semibold"),
+                dbc.Input(id="cfg-res-w", value=2560, type="number", min=320, size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Height (px)", className="small fw-semibold"),
+                dbc.Input(id="cfg-res-h", value=1440, type="number", min=240, size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("DPI", className="small fw-semibold"),
+                dbc.Input(id="cfg-dpi", value=96, type="number",
+                          min=72, max=600, size="sm"),
+            ], width=2),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Axis ────────────────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("📐 Axis", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("X Label", className="small fw-semibold"),
+                dbc.Input(id="cfg-x-label",
+                          placeholder="e.g. Date & Time", size="sm"),
+            ], width=3),
+            dbc.Col([
+                dbc.Label("Y Label", className="small fw-semibold"),
+                dbc.Input(id="cfg-y-label",
+                          placeholder="e.g. Active Power (kW)", size="sm"),
+            ], width=3),
+            dbc.Col([
+                dbc.Label("Y Min", className="small fw-semibold"),
+                dbc.Input(id="cfg-y-min", type="number",
+                          placeholder="auto", size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Y Max", className="small fw-semibold"),
+                dbc.Input(id="cfg-y-max", type="number",
+                          placeholder="auto", size="sm"),
+            ], width=2),
+        ], className="mb-2"),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("X Min (datetime or number)", className="small fw-semibold"),
+                dbc.Input(id="cfg-x-min",
+                          placeholder="e.g. 2026-01-24 12:00:00", size="sm"),
+            ], width=4),
+            dbc.Col([
+                dbc.Label("X Max (datetime or number)", className="small fw-semibold"),
+                dbc.Input(id="cfg-x-max",
+                          placeholder="e.g. 2026-01-25 03:00:00", size="sm"),
+            ], width=4),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Grid ────────────────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("🔲 Grid", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Visible", className="small fw-semibold"),
+                dbc.Select(id="cfg-grid-visible",
+                           options=[{"label": "Yes", "value": "true"},
+                                    {"label": "No",  "value": "false"}],
+                           value="true", size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Axis", className="small fw-semibold"),
+                dbc.Select(id="cfg-grid-axis",
+                           options=[{"label": a, "value": a}
+                                    for a in ["both", "x", "y"]],
+                           value="both", size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Line Style", className="small fw-semibold"),
+                dbc.Select(id="cfg-grid-linestyle",
+                           options=[{"label": ls, "value": ls} for ls in LINESTYLES],
+                           value="-", size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Alpha", className="small fw-semibold"),
+                dbc.Input(id="cfg-grid-alpha", value=0.3, type="number",
+                          min=0.0, max=1.0, step=0.05, size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Width", className="small fw-semibold"),
+                dbc.Input(id="cfg-grid-width", value=1, type="number",
+                          min=0.5, max=5.0, step=0.5, size="sm"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Colour", className="small fw-semibold"),
+                html.Div([
+                    dbc.Input(id="cfg-grid-color-swatch", type="color", value="#505050",
+                              style={"width": "38px", "height": "31px", "padding": "2px",
+                                     "border": "1px solid #ced4da",
+                                     "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
+                    dbc.Input(id="cfg-grid-color-hex", value="#505050", size="sm",
+                              style={"borderRadius": "0 4px 4px 0",
+                                     "fontFamily": "monospace", "width": "95px"}),
+                ], className="d-flex"),
+            ], width=2),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Subplot Params ──────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("📦 Subplot Params", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([dbc.Label("Left",   className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-left",   value=0.03, type="number",
+                               min=0.0, max=0.5, step=0.01, size="sm")], width=2),
+            dbc.Col([dbc.Label("Right",  className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-right",  value=0.92, type="number",
+                               min=0.5, max=1.0, step=0.01, size="sm")], width=2),
+            dbc.Col([dbc.Label("Top",    className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-top",    value=0.95, type="number",
+                               min=0.5, max=1.0, step=0.01, size="sm")], width=2),
+            dbc.Col([dbc.Label("Bottom", className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-bottom", value=0.06, type="number",
+                               min=0.0, max=0.5, step=0.01, size="sm")], width=2),
+        ], className="mb-2"),
+        dbc.Row([
+            dbc.Col([dbc.Label("Legend X",          className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-lgx",      value=0.92, type="number",
+                               min=0.0, max=1.5, step=0.01, size="sm")], width=2),
+            dbc.Col([dbc.Label("Legend Y",          className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-lgy",      value=0.83, type="number",
+                               min=0.0, max=1.5, step=0.01, size="sm")], width=2),
+            dbc.Col([dbc.Label("Legend Width (px)", className="small fw-semibold"),
+                     dbc.Input(id="cfg-sp-lgw",      value=500, type="number",
+                               min=50, max=2000, step=10, size="sm")], width=3),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Responsive ─────────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("📱 Responsive / Fonts", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([dbc.Label("Font Scale",    className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-font-scale", value=1.0, type="number",
+                               min=0.5, max=3.0, step=0.1, size="sm")], width=2),
+            dbc.Col([dbc.Label("LW Scale",      className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-lw-scale",   value=1.0, type="number",
+                               min=0.5, max=3.0, step=0.1, size="sm")], width=2),
+            dbc.Col([dbc.Label("Title Fontsize", className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-title-fs",   value=20, type="number",
+                               min=6, max=72, size="sm")], width=2),
+            dbc.Col([dbc.Label("Axis Label FS",  className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-axis-fs",    value=15, type="number",
+                               min=6, max=48, size="sm")], width=2),
+            dbc.Col([dbc.Label("Tick FS",        className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-tick-fs",    value=12, type="number",
+                               min=6, max=36, size="sm")], width=2),
+            dbc.Col([dbc.Label("Legend FS",      className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-legend-fs",  value=13, type="number",
+                               min=6, max=36, size="sm")], width=2),
+        ], className="mb-2"),
+        dbc.Row([
+            dbc.Col([dbc.Label("Legend Font Family", className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-legend-ff", value="sans-serif", size="sm")], width=3),
+            dbc.Col([dbc.Label("Pad Top",    className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-pad-top",    value=0.5, type="number",
+                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+            dbc.Col([dbc.Label("Sep Above",  className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-sep-above",  value=0.4, type="number",
+                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+            dbc.Col([dbc.Label("Sep Below",  className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-sep-below",  value=0.4, type="number",
+                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+            dbc.Col([dbc.Label("Gap Slots",  className="small fw-semibold"),
+                     dbc.Input(id="cfg-r-gap-slots",  value=0.5, type="number",
+                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+        ], className="mb-2"),
+    ]
+
+
+def _editor_modal():
+    return dbc.Modal(
+        id="cfg-editor-modal", size="xl", scrollable=True, is_open=False,
+        children=[
+            dbc.ModalHeader(dbc.ModalTitle(id="cfg-editor-title", children="New Config")),
+            dbc.ModalBody(_editor_modal_body()),
+            dbc.ModalFooter([
+                html.Div(id="cfg-save-status", className="me-auto small"),
+                dbc.Button("💾 Save", id="btn-cfg-save",   color="primary",   className="me-2"),
+                dbc.Button("Cancel",  id="btn-cfg-cancel", color="secondary"),
+            ]),
+        ],
+    )
+
+
+def _confirm_delete_modal():
+    return dbc.Modal(id="cfg-confirm-delete-modal", is_open=False, children=[
+        dbc.ModalHeader(dbc.ModalTitle("Confirm Delete")),
+        dbc.ModalBody(html.P(id="cfg-delete-confirm-text",
+                             children="Are you sure you want to delete this file?")),
+        dbc.ModalFooter([
+            dbc.Button("🗑️ Delete", id="btn-cfg-confirm-delete",
+                       color="danger",    className="me-2"),
+            dbc.Button("Cancel",    id="btn-cfg-cancel-delete",
+                       color="secondary"),
+        ]),
+    ])
+
+
+def config_manager_tab():
+    """Return the ⚙️ Config Manager dbc.Tab."""
+    return dbc.Tab(label="⚙️ Config Manager", tab_id="tab-config-manager", children=[
+        dbc.Container(fluid=True, children=[
+
+            # ── Folder selector ──────────────────────────────────────────
+            dbc.Card(className="mb-3", children=[
+                dbc.CardHeader(html.B("Config Folder")),
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col(dbc.Label("Folder Path:"), width=2),
+                        dbc.Col(
+                            dbc.Input(id="cfgmgr-folder-path",
+                                      placeholder="e.g. configs/  or  C:\\my_configs",
+                                      size="sm"),
+                            width=True,
+                        ),
+                        dbc.Col(html.Div([
+                            dbc.Button("📁 Browse", id="btn-cfgmgr-browse",
+                                       color="secondary", size="sm", className="me-1"),
+                            dcc.Upload(
+                                id="upload-cfgmgr-folder",
+                                children=html.Span("⬆ Drop any file from folder"),
+                                style={
+                                    "border": "1.5px dashed #adb5bd",
+                                    "borderRadius": "6px", "padding": "4px 10px",
+                                    "fontSize": "11px", "color": "#6c757d",
+                                    "cursor": "pointer", "textAlign": "center",
+                                    "lineHeight": "28px", "minWidth": "170px",
+                                },
+                                multiple=False, className="d-inline-block",
+                            ),
+                        ], className="d-flex align-items-center"), width="auto"),
+                        dbc.Col(
+                            dbc.Button("🔄 Refresh", id="btn-cfgmgr-refresh",
+                                       color="info", size="sm", outline=True),
+                            width="auto",
+                        ),
+                    ], className="mb-2 align-items-center"),
+                    html.Div(id="cfgmgr-folder-status", className="text-muted small"),
+                ]),
+            ]),
+
+            # ── File list + action toolbar ───────────────────────────────
+            dbc.Card(className="mb-3", children=[
+                dbc.CardHeader(dbc.Row([
+                    dbc.Col(html.B("Config Files"), width="auto"),
+                    dbc.Col(html.Div([
+                        dbc.Button("➕ New",       id="btn-cfgmgr-new",
+                                   color="primary",   size="sm", className="me-1"),
+                        dbc.Button("✏️ Edit",      id="btn-cfgmgr-edit",
+                                   color="secondary", size="sm",
+                                   className="me-1", disabled=True),
+                        dbc.Button("📋 Clone",     id="btn-cfgmgr-clone",
+                                   color="info",      size="sm", outline=True,
+                                   className="me-1",  disabled=True),
+                        dbc.Button("🗑️ Delete",    id="btn-cfgmgr-delete",
+                                   color="danger",    size="sm", outline=True,
+                                   disabled=True),
+                    ], className="d-flex"), className="ms-auto", width="auto"),
+                ], align="center", justify="between")),
+                dbc.CardBody([
+                    html.Div(id="cfgmgr-action-status", className="mb-2 small"),
+                    html.Div(
+                        id="cfgmgr-file-list",
+                        style={"maxHeight": "380px", "overflowY": "auto"},
+                        children=[
+                            html.P("No folder loaded. Set a folder path above and click Refresh.",
+                                   className="text-muted small"),
+                        ],
+                    ),
+                ]),
+            ]),
+
+            # Stores
+            dcc.Store(id="store-cfgmgr-selected",  data=None),
+            dcc.Store(id="store-cfgmgr-edit-mode", data=None),
+
+            _editor_modal(),
+            _confirm_delete_modal(),
+        ]),
+    ])
