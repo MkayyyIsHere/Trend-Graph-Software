@@ -14,13 +14,6 @@ except ImportError:
 
 from app.config_manager_layout import config_manager_tab
 
-# ── Shared drop-zone style ──────────────────────────────────────────────────
-_DROP_STYLE = {
-    'border': '1.5px dashed #adb5bd', 'borderRadius': '6px',
-    'padding': '4px 10px', 'fontSize': '11px', 'color': '#6c757d',
-    'cursor': 'pointer', 'textAlign': 'center',
-    'lineHeight': '28px', 'minWidth': '110px',
-}
 _LOG_STYLE_BASE = {
     'overflowY': 'auto', 'fontSize': '11px',
     'borderRadius': '6px', 'padding': '10px',
@@ -49,11 +42,11 @@ def ensure_assets():
 
 def file_row(label, input_id, browse_id, upload_id, placeholder,
              extra_btn=None, width_label=2):
-    """Labelled file-input row: text box + Browse button + drop-zone."""
+    """Labelled file-input row: text box + Browse button only (no drop zone).
+    upload_id kept for API compatibility but no Upload component is rendered.
+    """
     buttons = [
         dbc.Button("📁 Browse", id=browse_id, color='secondary', size='sm', className='me-1'),
-        dcc.Upload(id=upload_id, children=html.Span("⬆ Drop file"),
-                   style=_DROP_STYLE, multiple=False, className='me-1 d-inline-block'),
     ]
     if extra_btn:
         buttons.append(extra_btn)
@@ -64,15 +57,15 @@ def file_row(label, input_id, browse_id, upload_id, placeholder,
     ], className="mb-2 align-items-center")
 
 
-def folder_drop_row(label, input_id, upload_id, placeholder):
-    """Folder path row with drag-any-file drop-zone to extract parent folder."""
-    drop_style = {**_DROP_STYLE, 'minWidth': '150px'}
+def folder_browse_row(label, input_id, browse_id, placeholder):
+    """Folder path row with a Tkinter Browse button — no drop zone."""
     return dbc.Row([
         dbc.Col(dbc.Label(label), width=2),
         dbc.Col(dbc.Input(id=input_id, placeholder=placeholder, size='sm'), width=True),
-        dbc.Col(dcc.Upload(id=upload_id, children=html.Span("⬆ Drop any file from folder"),
-                           style=drop_style, multiple=False, className='d-inline-block'),
-                width='auto'),
+        dbc.Col(
+            dbc.Button("📁 Browse", id=browse_id, color='secondary', size='sm'),
+            width='auto',
+        ),
     ], className="mb-2 align-items-center")
 
 
@@ -169,12 +162,12 @@ def _chart_tab():
             dbc.Card(className="mb-3", children=[
                 dbc.CardHeader(html.B("Batch Processing")),
                 dbc.CardBody([
-                    folder_drop_row("Config Folder:", 'batch-config-folder',
-                                    'upload-batch-config', 'Folder of plot config JSONs…'),
-                    folder_drop_row("Data Folder:",   'batch-data-folder',
-                                    'upload-batch-data',   'Folder of CSV / TXT data files…'),
-                    folder_drop_row("Output Folder:", 'batch-output-folder',
-                                    'upload-batch-output', 'Output folder for exported PNGs…'),
+                    folder_browse_row("Config Folder:", 'batch-config-folder',
+                                      'btn-browse-batch-config', 'Folder of plot config JSONs…'),
+                    folder_browse_row("Data Folder:",   'batch-data-folder',
+                                      'btn-browse-batch-data',   'Folder of CSV / TXT data files…'),
+                    folder_browse_row("Output Folder:", 'batch-output-folder',
+                                      'btn-browse-batch-output', 'Output folder for exported PNGs…'),
                     html.Div(id='batch-summary', className="text-primary small mb-2"),
                     dbc.Row([dbc.Col([
                         dbc.Button("▶ Run Batch", id='btn-batch', color='warning', className='me-2'),
@@ -231,13 +224,13 @@ def _ppt_tab():
             dbc.Card(className="mb-3", children=[
                 dbc.CardHeader(html.B("PowerPoint Builder")),
                 dbc.CardBody([
-                    folder_drop_row("Image Folder:",  'ppt-img-folder',    'upload-ppt-img',
-                                    'Folder containing PNG/JPG images…'),
+                    folder_browse_row("Image Folder:",  'ppt-img-folder',
+                                      'btn-browse-ppt-img', 'Folder containing PNG/JPG images…'),
                     file_row("PPTX Template:",        'ppt-template',
                              'btn-browse-ppt-tmpl',   'upload-ppt-tmpl-file',
                              'Path to .pptx template…'),
-                    folder_drop_row("Output Folder:", 'ppt-output-folder', 'upload-ppt-out-folder',
-                                    'Output folder for .pptx…'),
+                    folder_browse_row("Output Folder:", 'ppt-output-folder',
+                                      'btn-browse-ppt-out-folder', 'Output folder for .pptx…'),
                     dbc.Row([
                         dbc.Col(dbc.Label("Output Filename:"), width=3),
                         dbc.Col(dbc.Input(id='ppt-filename', value='output.pptx', size='sm'), width=5),

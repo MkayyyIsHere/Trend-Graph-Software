@@ -628,18 +628,6 @@ def config_manager_tab():
                         dbc.Col(html.Div([
                             dbc.Button("📁 Browse", id="btn-cfgmgr-browse",
                                        color="secondary", size="sm", className="me-1"),
-                            dcc.Upload(
-                                id="upload-cfgmgr-folder",
-                                children=html.Span("⬆ Drop any file from folder"),
-                                style={
-                                    "border": "1.5px dashed #adb5bd",
-                                    "borderRadius": "6px", "padding": "4px 10px",
-                                    "fontSize": "11px", "color": "#6c757d",
-                                    "cursor": "pointer", "textAlign": "center",
-                                    "lineHeight": "28px", "minWidth": "170px",
-                                },
-                                multiple=False, className="d-inline-block",
-                            ),
                         ], className="d-flex align-items-center"), width="auto"),
                         dbc.Col(
                             dbc.Button("🔄 Refresh", id="btn-cfgmgr-refresh",

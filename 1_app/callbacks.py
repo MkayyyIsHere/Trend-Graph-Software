@@ -145,7 +145,7 @@ def _ppt_thread(state, img_folder, template, out_path, auto_resize, slide_dpi):
 def register_callbacks(app, state, temp_dir: str):
     """Register all server-side and clientside callbacks on *1_app*."""
 
-    # ── Browse buttons → Flask pick endpoints (clientside) ───────────────────
+    # ── File Browse buttons → Flask file-picker endpoint (clientside) ────────
     _file_browse = [
         ('btn-browse-gantt',    'gantt-config-path',  'json',   False),
         ('btn-browse-event',    'event-file-path',    'csv',    False),
@@ -169,6 +169,32 @@ def register_callbacks(app, state, temp_dir: str):
             Input(btn_id, 'n_clicks'),
             prevent_initial_call=True,
         )
+
+    # ── Folder Browse buttons → Flask folder-picker endpoint (clientside) ────
+    _folder_browse = [
+        ('btn-browse-batch-config',   'batch-config-folder',  'Select Config Folder'),
+        ('btn-browse-batch-data',     'batch-data-folder',    'Select Data Folder'),
+        ('btn-browse-batch-output',   'batch-output-folder',  'Select Output Folder'),
+        ('btn-browse-ppt-img',        'ppt-img-folder',       'Select Image Folder'),
+        ('btn-browse-ppt-out-folder', 'ppt-output-folder',    'Select Output Folder'),
+        ('btn-cfgmgr-browse',         'cfgmgr-folder-path',   'Select Config Folder'),
+    ]
+    for btn_id, inp_id, title in _folder_browse:
+        app.clientside_callback(
+            f"""
+            function(n) {{
+                if (!n) return window.dash_clientside.no_update;
+                return fetch('/api/pick-folder?title={title.replace(" ", "%20")}')
+                    .then(r => r.json())
+                    .then(d => d.path || window.dash_clientside.no_update);
+            }}
+            """,
+            Output(inp_id, 'value', allow_duplicate=True),
+            Input(btn_id, 'n_clicks'),
+            prevent_initial_call=True,
+        )
+
+    # ── (Upload drop zones removed — all paths set via Browse buttons only) ──
 
     # ── Auto-scroll logs (clientside) ────────────────────────────────────────
     for log_id in ('log-output', 'batch-log-output', 'ppt-log-output'):
@@ -209,59 +235,6 @@ def register_callbacks(app, state, temp_dir: str):
             Input(btn_id, 'n_clicks'),
             prevent_initial_call=True,
         )
-
-    # ── dcc.Upload → save file to temp dir ───────────────────────────────────
-    for upload_id, inp_id in [
-        ('upload-gantt',  'gantt-config-path'),
-        ('upload-event',  'event-file-path'),
-        ('upload-config', 'plot-config-path'),
-        ('upload-series', 'series-file-path'),
-    ]:
-        @app.callback(
-            Output(inp_id, 'value', allow_duplicate=True),
-            Input(upload_id, 'contents'),
-            State(upload_id, 'filename'),
-            prevent_initial_call=True,
-        )
-        def _on_upload(contents, filename, _td=temp_dir):
-            return _save_upload(contents, filename, _td)
-
-    # ── dcc.Upload → extract folder path (batch + PPT folder drops) ──────────
-    for upload_id, inp_id in [
-        ('upload-batch-config',   'batch-config-folder'),
-        ('upload-batch-data',     'batch-data-folder'),
-        ('upload-batch-output',   'batch-output-folder'),
-        ('upload-ppt-img',        'ppt-img-folder'),
-        ('upload-ppt-out-folder', 'ppt-output-folder'),
-    ]:
-        @app.callback(
-            Output(inp_id, 'value', allow_duplicate=True),
-            Input(upload_id, 'filename'),
-            State(inp_id, 'value'),
-            prevent_initial_call=True,
-        )
-        def _on_folder_drop(filename, current):
-            if not filename:
-                raise PreventUpdate
-            folder = _find_in_folder(filename, current)
-            if folder:
-                return folder
-            raise PreventUpdate
-
-    # ── PPT template upload ───────────────────────────────────────────────────
-    @app.callback(
-        Output('ppt-template', 'value', allow_duplicate=True),
-        Input('upload-ppt-tmpl-file', 'filename'),
-        State('ppt-template', 'value'),
-        prevent_initial_call=True,
-    )
-    def fill_ppt_template(filename, current):
-        if not filename:
-            raise PreventUpdate
-        folder = _find_in_folder(filename, current)
-        if folder:
-            return os.path.join(folder, filename)
-        return filename
 
     # ── Log panel toggles (unified) ───────────────────────────────────────────
     for toggle_id, collapse_id in [
@@ -404,6 +377,19 @@ def register_callbacks(app, state, temp_dir: str):
             return True, f"{title} ({len(df)} rows, {len(df.columns)} cols)", tbl
         except Exception as e:
             return True, title, dbc.Alert(f"Error: {e}", color="danger")
+
+    # ── Clear generate-status immediately when Generate is clicked ────────────
+    app.clientside_callback(
+        """
+        function(n) {
+            if (!n) return window.dash_clientside.no_update;
+            return '';
+        }
+        """,
+        Output('generate-status', 'children', allow_duplicate=True),
+        Input('btn-generate', 'n_clicks'),
+        prevent_initial_call=True,
+    )
 
     # ── Generate chart ────────────────────────────────────────────────────────
     @app.callback(

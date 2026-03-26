@@ -9,5 +9,6 @@ build/
 4_assets/
 *.png
 *.pptx
+5_configs
 6_templates
 7_samples

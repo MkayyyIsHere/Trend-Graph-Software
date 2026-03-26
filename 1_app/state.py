@@ -39,4 +39,3 @@ class AppState:
         self.last_tasks:            Optional[List[Task]]            = None
         self.last_png_bytes:        Optional[bytes]                 = None
         self.last_pptx_path:        Optional[str]                   = None
-
