@@ -168,8 +168,9 @@ class CompositeChartGenerator:
             self.task_colors[task.test_id] = color
             fc    = color + '40' if not task.is_normalization else '#80808040'
             ec    = color        if not task.is_normalization else '#808080'
+            ec = color if not task.is_normalization else '#808080'
             self.ax.axvspan(task.start_time, task.end_time,
-                            alpha=bar_alpha, color=color if not task.is_normalization else '#808080',
+                            facecolor='none', edgecolor=ec,
                             linewidth=edge_width, zorder=1)
             task_data.append({'task': task, 'sn': sn, 'en': en,
                                'color': color if not task.is_normalization else '#808080'})

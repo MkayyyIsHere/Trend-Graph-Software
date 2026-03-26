@@ -110,11 +110,11 @@ def build_plotly_figure(config: ConfigManager,
             color = task_colors[task.test_id]
 
         if task.is_normalization:
-            fill_rgba = 'rgba(128,128,128,0.08)'
+            fill_rgba = 'rgba(0,0,0,0)'
             edge_rgba = 'rgba(128,128,128,0.35)'
             color     = '#808080'
         else:
-            fill_rgba = _hex_to_rgba(color, 0.18)
+            fill_rgba = 'rgba(0,0,0,0)'
             edge_rgba = _hex_to_rgba(color, 0.70)
 
         task_data.append({
@@ -272,6 +272,9 @@ def build_plotly_figure(config: ConfigManager,
             tickformat='%H:%M<br>%b %d',
             showspikes=True, spikemode='across', spikesnap='cursor',
             spikedash='solid', spikecolor='gray', spikethickness=1,
+            showline=True, linecolor='rgba(80,80,80,0.8)', linewidth=1.5,
+            ticks='outside', ticklen=6, tickwidth=1, tickcolor='rgba(80,80,80,0.8)',
+            minor=dict(ticks='outside', ticklen=3, tickwidth=0.7, tickcolor='rgba(80,80,80,0.6)'),
         ),
         yaxis=dict(
             title=ac.get('y_label', 'Value'),
@@ -288,8 +291,8 @@ def build_plotly_figure(config: ConfigManager,
             x=1.02, xanchor='left',
             y=1.0,  yanchor='top',
             bgcolor='rgba(255,255,255,0.9)',
-            bordercolor='rgba(180,180,180,0.8)',
-            borderwidth=1,
+            bordercolor='rgba(0,0,0,0)',
+            borderwidth=0,
             font=dict(size=label_fs),
             title=dict(text=''),
         ),
@@ -357,8 +360,8 @@ def build_plotly_figure(config: ConfigManager,
         align='left',
         font=dict(size=label_fs, family='monospace', color='#1a1a1a'),
         bgcolor='rgba(255,255,255,0.92)',
-        bordercolor='rgba(150,150,150,0.7)',
-        borderwidth=1,
+        bordercolor='rgba(0,0,0,0)',
+        borderwidth=0,
         borderpad=8,
         width=280,
     )
