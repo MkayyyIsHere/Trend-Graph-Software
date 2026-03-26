@@ -1,14 +1,10 @@
 """1_app/callbacks.py — All Dash @1_app.callback and clientside_callback registrations."""
 import base64
-import io
 import os
 import re
 import threading
 import traceback
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -16,9 +12,8 @@ from dash import Input, Output, State, dash_table, ctx, html, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from utils.constants import DEFAULT_DPI
+from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, RESOLUTION_PRESETS
 from backend.processors import SeriesDataProcessor, EventDataProcessor
-from backend.chart_gen import CompositeChartGenerator
 from backend.plotly_preview import build_plotly_figure
 from backend.batch_worker import run_batch as _run_batch_worker
 from backend.ppt_builder import PPTBuilder
@@ -445,17 +440,22 @@ def register_callbacks(app, state, temp_dir: str):
         es    = event_proc.get_summary()
         state.logger.info(f"Events: {es['total_tasks']} tasks  IDs: {', '.join(es['test_ids'])}")
 
-        gen = CompositeChartGenerator(state.config, state.logger, state.gantt_config)
-        if not gen.generate(all_data_points, tasks):
+        cc       = state.config.get_chart_config()
+        dpi      = cc.get('dpi', DEFAULT_DPI)
+        fig_size = cc.get('figure_size', DEFAULT_FIGURE_SIZE)
+        width_px = int(round(fig_size[0] * dpi))
+        height_px= int(round(fig_size[1] * dpi))
+        try:
+            fig = build_plotly_figure(
+                state.config, all_data_points, tasks, state.gantt_config,
+                width=width_px, height=height_px,
+            )
+            # Store PNG bytes for any downstream consumers (e.g. PPT builder)
+            state.last_png_bytes = fig.to_image(
+                format='png', width=width_px, height=height_px, scale=1)
+        except Exception as e:
+            state.logger.error(f"Chart generation failed: {e}")
             return (dbc.Alert("Chart generation failed — see log.", color="danger"), *_fail)
-
-        buf = io.BytesIO()
-        dpi = state.config.get_chart_config().get('dpi', DEFAULT_DPI)
-        gen.fig.savefig(buf, format='png', dpi=dpi,
-                        bbox_inches=None, facecolor='white', edgecolor='none', pad_inches=0)
-        plt.close(gen.fig)
-        buf.seek(0)
-        state.last_png_bytes       = buf.read()
         state.last_all_data_points = all_data_points
         state.last_tasks           = tasks
         state.logger.info("Chart ready in memory")
@@ -487,15 +487,19 @@ def register_callbacks(app, state, temp_dir: str):
             return dbc.Alert("Enter an export output path first (or click Browse).", color="warning")
         try:
             os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-            gen = CompositeChartGenerator(state.config, state.logger, state.gantt_config)
-            if gen.generate(state.last_all_data_points, state.last_tasks):
-                dpi = state.config.get_chart_config().get('dpi', DEFAULT_DPI)
-                gen.fig.savefig(out_path, dpi=dpi, bbox_inches=None,
-                                facecolor='white', edgecolor='none', pad_inches=0)
-                plt.close(gen.fig)
-                state.logger.info(f"Chart exported: {out_path}")
-                return dbc.Alert(f"✓ Saved: {out_path}", color="success")
-            return dbc.Alert("Export render failed — see log.", color="danger")
+            cc       = state.config.get_chart_config()
+            dpi      = cc.get('dpi', DEFAULT_DPI)
+            fig_size = cc.get('figure_size', DEFAULT_FIGURE_SIZE)
+            width_px = int(round(fig_size[0] * dpi))
+            height_px= int(round(fig_size[1] * dpi))
+            fig = build_plotly_figure(
+                state.config, state.last_all_data_points, state.last_tasks,
+                state.gantt_config, width=width_px, height=height_px,
+            )
+            fig.write_image(out_path, format='png',
+                            width=width_px, height=height_px, scale=1)
+            state.logger.info(f"Chart exported: {out_path}")
+            return dbc.Alert(f"✓ Saved: {out_path}", color="success")
         except Exception as e:
             state.logger.error(f"Export error: {e}")
             return dbc.Alert(f"Export error: {e}", color="danger")
@@ -509,6 +513,9 @@ def register_callbacks(app, state, temp_dir: str):
     def update_plotly_preview(ready):
         if not ready or state.last_all_data_points is None:
             return go.Figure()
+        # No width/height passed here — figure uses autosize=True so it
+        # fills the scrollable CSS container in the browser.
+        # Explicit pixel dimensions are only used by the batch exporter.
         return build_plotly_figure(
             state.config, state.last_all_data_points,
             state.last_tasks or [], state.gantt_config,
@@ -671,6 +678,19 @@ def register_callbacks(app, state, temp_dir: str):
                                f"to {result['out_folder']}", color=clr)
 
         return spans, still_run, not still_run, estop_label, status
+
+    # ── Resolution preset selector ───────────────────────────────────────────
+    @app.callback(
+        Output('settings-width',  'value', allow_duplicate=True),
+        Output('settings-height', 'value', allow_duplicate=True),
+        Input('preset-select', 'value'),
+        prevent_initial_call=True,
+    )
+    def apply_preset(preset):
+        res = RESOLUTION_PRESETS.get(preset)
+        if not res:
+            raise PreventUpdate   # 'Custom' — leave fields alone
+        return res[0], res[1]
 
     # ── Settings modal ────────────────────────────────────────────────────────
     @app.callback(

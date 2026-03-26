@@ -187,14 +187,53 @@ def _preview_tab():
     return dbc.Tab(label="🔍 Live Preview", tab_id="tab-preview", children=[
         dbc.Container(fluid=True, children=[
             dbc.Card(className="mb-3", children=[
-                dbc.CardHeader(html.B("Interactive Chart Preview")),
-                dbc.CardBody(dcc.Graph(
-                    id='plotly-preview', style={'height': '500px'},
-                    config={'displayModeBar': True, 'scrollZoom': True,
-                            'toImageButtonOptions': {'format': 'png',
-                                                     'filename': 'composite_preview',
-                                                     'height': 900, 'width': 1600, 'scale': 2}},
-                )),
+                dbc.CardHeader(
+                    dbc.Row([
+                        dbc.Col(html.B("Interactive Chart Preview"), width="auto"),
+                        dbc.Col(
+                            html.Small(
+                                "🛈 Pan: click & drag · Zoom: scroll or box-select · "
+                                "Reset: double-click · Export: camera ↗ icon",
+                                className="text-muted",
+                            ),
+                            className="ms-2 d-flex align-items-center",
+                        ),
+                    ], align="center"),
+                ),
+                # Scrollable container: fixed viewport height, scroll to see full chart
+                dbc.CardBody(
+                    html.Div(
+                        dcc.Graph(
+                            id='plotly-preview',
+                            # responsive=True makes the graph fill its parent
+                            # div, not the other way around.
+                            responsive=True,
+                            style={'width': '100%', 'height': '100%'},
+                            config={
+                                'displayModeBar': True,
+                                'scrollZoom': True,
+                                'modeBarButtonsToAdd': ['pan2d'],
+                                'toImageButtonOptions': {
+                                    'format': 'png',
+                                    'filename': 'composite_preview',
+                                    'height': None,   # uses figure's own height
+                                    'width':  None,   # uses figure's own width
+                                    'scale': 1,
+                                },
+                            },
+                        ),
+                        style={
+                            # Fixed viewport: user scrolls inside to see the
+                            # full-resolution chart without breaking page layout.
+                            'height': '600px',
+                            'overflowY': 'auto',
+                            'overflowX': 'auto',
+                            'border': '1px solid rgba(0,0,0,0.1)',
+                            'borderRadius': '4px',
+                        },
+                    ),
+                    style={'padding': '8px'},
+                ),
             ]),
             dbc.Row([
                 dbc.Col(dbc.Card(className="mb-3", children=[

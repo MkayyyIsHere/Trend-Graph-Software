@@ -22,7 +22,9 @@ def _hex_to_rgba(hex_color: str, alpha: float) -> str:
 def build_plotly_figure(config: ConfigManager,
                          all_series_data: List[List[DataPoint]],
                          tasks: List[Task],
-                         gantt_config: GanttConfigManager = None) -> go.Figure:
+                         gantt_config: GanttConfigManager = None,
+                         width: int = None,
+                         height: int = None) -> go.Figure:
     """
     Build an interactive Plotly version of the composite chart that faithfully
     mirrors the Matplotlib export:
@@ -315,6 +317,12 @@ def build_plotly_figure(config: ConfigManager,
             title=dict(text=''),
         ),
         margin=dict(l=70, r=320, t=70, b=80),
+        # When explicit pixel dims are provided (batch export): fix the size
+        # so kaleido renders at exactly the right resolution.
+        # When no dims given (browser preview): autosize=True so the figure
+        # fills its CSS container instead of overflowing the page.
+        **(dict(width=width, height=height, autosize=False)
+           if width and height else dict(autosize=True)),
     )
 
     # ── Right-side legend table (mirrors matplotlib _create_legend) ───────────

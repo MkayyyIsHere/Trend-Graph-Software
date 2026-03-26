@@ -109,16 +109,17 @@ def run_batch(
                 gantt_config.config_path
                 if gantt_config.is_loaded() else None)
 
-            fig = build_plotly_figure(cfg, all_dp, tasks, gantt_copy)
-
             # Derive exact pixel dimensions from config (same as Matplotlib).
-            # Plotly/kaleido accepts width & height in pixels directly;
-            # scale=1 means no further multiplication is applied.
+            # Pass them into build_plotly_figure so the layout is constructed
+            # at the correct size — not stretched post-hoc by kaleido.
             cc         = cfg.get_chart_config()
             dpi        = cc.get('dpi', DEFAULT_DPI)
             fig_size   = cc.get('figure_size', DEFAULT_FIGURE_SIZE)
             width_px   = int(round(fig_size[0] * dpi))
             height_px  = int(round(fig_size[1] * dpi))
+
+            fig = build_plotly_figure(cfg, all_dp, tasks, gantt_copy,
+                                      width=width_px, height=height_px)
 
             fig.write_image(out_path, format='png',
                             width=width_px, height=height_px, scale=1)
