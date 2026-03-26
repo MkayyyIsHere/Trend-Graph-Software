@@ -1,4 +1,4 @@
-"""app/callbacks.py — All Dash @app.callback and clientside_callback registrations."""
+"""1_app/callbacks.py — All Dash @1_app.callback and clientside_callback registrations."""
 import base64
 import io
 import os
@@ -33,12 +33,21 @@ from app.config_manager_callbacks import register_config_manager_callbacks
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+_CLASS_TO_COLOR = {
+    'log-info':    '#a6e3a1',
+    'log-warning': '#f9e2af',
+    'log-error':   '#f38ba8',
+    'log-debug':   '#89b4fa',
+    'log-default': '#cdd6f4',
+}
+
 def _log_spans(lines, classifier):
     """Convert a list of log strings into colored html.Span elements."""
     spans = []
     for line in lines[-500:]:
         cls = classifier(line)
-        spans.append(html.Span(line + '\n', className=cls))
+        color = _CLASS_TO_COLOR.get(cls, '#cdd6f4')
+        spans.append(html.Span(line + '\n', style={'color': color}))
     return spans
 
 
@@ -134,7 +143,7 @@ def _ppt_thread(state, img_folder, template, out_path, auto_resize, slide_dpi):
 # ── Main registration function ───────────────────────────────────────────────
 
 def register_callbacks(app, state, temp_dir: str):
-    """Register all server-side and clientside callbacks on *app*."""
+    """Register all server-side and clientside callbacks on *1_app*."""
 
     # ── Browse buttons → Flask pick endpoints (clientside) ───────────────────
     _file_browse = [

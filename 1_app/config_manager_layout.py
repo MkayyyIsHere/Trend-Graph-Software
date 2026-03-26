@@ -1,4 +1,4 @@
-"""app/config_manager_layout.py — Layout for the ⚙️ Config Manager tab."""
+"""1_app/config_manager_layout.py — Layout for the ⚙️ Config Manager tab."""
 
 from dash import dcc, html
 import dash_bootstrap_components as dbc
@@ -25,6 +25,184 @@ COLOUR_PALETTES = {
 
 LINESTYLES  = ["-", "--", "-.", ":", "None"]
 MARKERS     = ["none", "o", "s", "^", "v", "D", "x", "+", "*"]
+
+# ── Config type constants ────────────────────────────────────────────────────
+CFG_TYPE_SERIES = "series"
+CFG_TYPE_GANTT  = "gantt"
+
+
+def _gantt_color_row(idx: int, test_id: str = "", color: str = "#1f77b4") -> dbc.Card:
+    """Build one Test ID → colour mapping row for the gantt editor."""
+    i = idx
+    return dbc.Card(
+        className="mb-1 border-secondary",
+        id=f"gantt-color-card-{i}",
+        children=[
+            dbc.CardBody(
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label("Test ID", className="small fw-semibold"),
+                        dbc.Input(
+                            id={"type": "gantt-test-id", "index": i},
+                            value=test_id,
+                            placeholder="e.g. HLT7",
+                            size="sm",
+                            style={"fontFamily": "monospace"},
+                        ),
+                    ], width=4),
+                    dbc.Col([
+                        dbc.Label("Colour", className="small fw-semibold"),
+                        html.Div([
+                            dbc.Input(
+                                id={"type": "gantt-color-swatch", "index": i},
+                                type="color", value=color,
+                                style={"width": "38px", "height": "31px", "padding": "2px",
+                                       "border": "1px solid #ced4da",
+                                       "borderRadius": "4px 0 0 4px", "cursor": "pointer"},
+                            ),
+                            dbc.Input(
+                                id={"type": "gantt-color-hex", "index": i},
+                                value=color, placeholder="#rrggbb", size="sm",
+                                style={"borderRadius": "0 4px 4px 0",
+                                       "fontFamily": "monospace", "width": "95px"},
+                            ),
+                        ], className="d-flex"),
+                    ], width=5),
+                    dbc.Col([
+                        dbc.Label("\u00a0", className="small fw-semibold d-block"),
+                        dbc.Button(
+                            "✕",
+                            id={"type": "btn-remove-gantt-color", "index": i},
+                            color="danger", size="sm", outline=True,
+                        ),
+                    ], width=3, className="d-flex flex-column align-items-start"),
+                ], align="center"),
+                className="py-2",
+            ),
+        ],
+    )
+
+
+def _palette_color_row(idx: int, color: str = "#1f77b4") -> dbc.Card:
+    """Build one default-palette colour entry row."""
+    i = idx
+    return dbc.Card(
+        className="mb-1 border-secondary",
+        id=f"gantt-palette-card-{i}",
+        children=[
+            dbc.CardBody(
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label(f"Colour {i + 1}", className="small fw-semibold"),
+                        html.Div([
+                            dbc.Input(
+                                id={"type": "gantt-palette-swatch", "index": i},
+                                type="color", value=color,
+                                style={"width": "38px", "height": "31px", "padding": "2px",
+                                       "border": "1px solid #ced4da",
+                                       "borderRadius": "4px 0 0 4px", "cursor": "pointer"},
+                            ),
+                            dbc.Input(
+                                id={"type": "gantt-palette-hex", "index": i},
+                                value=color, placeholder="#rrggbb", size="sm",
+                                style={"borderRadius": "0 4px 4px 0",
+                                       "fontFamily": "monospace", "width": "95px"},
+                            ),
+                        ], className="d-flex"),
+                    ], width=6),
+                    dbc.Col([
+                        dbc.Label("\u00a0", className="small fw-semibold d-block"),
+                        dbc.Button(
+                            "✕",
+                            id={"type": "btn-remove-palette-color", "index": i},
+                            color="danger", size="sm", outline=True,
+                        ),
+                    ], width=6, className="d-flex flex-column align-items-start"),
+                ], align="center"),
+                className="py-2",
+            ),
+        ],
+    )
+
+
+def _gantt_editor_section():
+    """Gantt/Event config editor section (shown when editing a gantt config)."""
+    return html.Div(id="cfg-gantt-section", children=[
+        # ── Gantt Bar Settings ───────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("🎨 Gantt Bar Settings", className="fw-bold text-success"))]),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Bar Alpha", className="small fw-semibold"),
+                dbc.Input(id="cfg-gantt-bar-alpha", value=0.3, type="number",
+                          min=0.0, max=1.0, step=0.05, size="sm"),
+                html.Small("0.0 = invisible, 1.0 = fully opaque", className="text-muted"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Bar Height Ratio", className="small fw-semibold"),
+                dbc.Input(id="cfg-gantt-bar-height", value=1.0, type="number",
+                          min=0.1, max=1.0, step=0.05, size="sm"),
+                html.Small("Fraction of allocated slot height", className="text-muted"),
+            ], width=2),
+            dbc.Col([
+                dbc.Label("Edge Colour", className="small fw-semibold"),
+                html.Div([
+                    dbc.Input(id="cfg-gantt-edge-swatch", type="color", value="#000000",
+                              style={"width": "38px", "height": "31px", "padding": "2px",
+                                     "border": "1px solid #ced4da",
+                                     "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
+                    dbc.Input(id="cfg-gantt-edge-hex", value="#000000", size="sm",
+                              style={"borderRadius": "0 4px 4px 0",
+                                     "fontFamily": "monospace", "width": "95px"}),
+                ], className="d-flex"),
+            ], width=3),
+            dbc.Col([
+                dbc.Label("Edge Width", className="small fw-semibold"),
+                dbc.Input(id="cfg-gantt-edge-width", value=0.2, type="number",
+                          min=0.0, max=5.0, step=0.1, size="sm"),
+                html.Small("Points before responsive scaling", className="text-muted"),
+            ], width=2),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Test ID → Colour Mappings ────────────────────────────────────
+        dbc.Row([
+            dbc.Col(html.H6("🏷️ Test ID Colour Mappings", className="fw-bold text-success"),
+                    width="auto"),
+            dbc.Col(
+                html.Small(
+                    "Test IDs not listed here cycle through the Default Palette below.",
+                    className="text-muted fst-italic",
+                ),
+                className="ms-2 d-flex align-items-center",
+            ),
+        ], align="center", className="mb-2"),
+
+        html.Div(id="cfg-gantt-colors-container", children=[]),
+
+        dbc.Button("➕ Add Test ID", id="btn-add-gantt-color", color="success",
+                   size="sm", outline=True, className="mb-3 mt-1"),
+
+        html.Hr(className="my-2"),
+
+        # ── Default Palette ──────────────────────────────────────────────
+        dbc.Row([
+            dbc.Col(html.H6("🎨 Default Palette", className="fw-bold text-success"),
+                    width="auto"),
+            dbc.Col(
+                html.Small(
+                    "Colours assigned in order to unmapped Test IDs. Cycles when exhausted.",
+                    className="text-muted fst-italic",
+                ),
+                className="ms-2 d-flex align-items-center",
+            ),
+        ], align="center", className="mb-2"),
+
+        html.Div(id="cfg-gantt-palette-container", children=[]),
+
+        dbc.Button("➕ Add Palette Colour", id="btn-add-palette-color", color="secondary",
+                   size="sm", outline=True, className="mb-3 mt-1"),
+    ])
 
 
 def _series_row(idx: int, s: dict = None) -> dbc.Card:
@@ -110,40 +288,9 @@ def _series_row(idx: int, s: dict = None) -> dbc.Card:
     ])
 
 
-def _editor_modal_body():
-    """Return the scrollable modal body — all config sections."""
+def _series_data_sections():
+    """All series/chart/axis/grid/subplot/responsive form elements (for dbc.Collapse)."""
     return [
-        # ── Filename ────────────────────────────────────────────────────────
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Filename (.json)", className="fw-semibold"),
-                dbc.Input(id="cfg-filename",
-                          placeholder="e.g. 0_config_composite_Active_Power.json",
-                          size="sm"),
-                html.Small("File will be saved to the selected config folder.",
-                           className="text-muted"),
-            ]),
-        ], className="mb-3"),
-
-        html.Hr(className="my-2"),
-
-        # ── Metadata ────────────────────────────────────────────────────────
-        dbc.Row([dbc.Col(html.H6("📝 Metadata", className="fw-bold text-primary"))]),
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Description", className="small fw-semibold"),
-                dbc.Textarea(id="cfg-description", rows=2, size="sm",
-                             placeholder="Brief description of this config…"),
-            ], width=6),
-            dbc.Col([
-                dbc.Label("Usage Notes", className="small fw-semibold"),
-                dbc.Textarea(id="cfg-usage", rows=2, size="sm",
-                             placeholder="Usage instructions…"),
-            ], width=6),
-        ], className="mb-3"),
-
-        html.Hr(className="my-2"),
-
         # ── Series ──────────────────────────────────────────────────────────
         dbc.Row([
             dbc.Col(html.H6("📈 Series", className="fw-bold text-primary"), width="auto"),
@@ -172,7 +319,6 @@ def _editor_modal_body():
         dbc.Button("➕ Add Series", id="btn-add-series", color="secondary",
                    size="sm", outline=True, className="mb-3 mt-1"),
 
-        # Hidden store for series count
         dcc.Store(id="store-series-count", data=0),
 
         html.Hr(className="my-2"),
@@ -375,6 +521,64 @@ def _editor_modal_body():
     ]
 
 
+def _editor_modal_body():
+    """Return the scrollable modal body — all config sections."""
+    return [
+        # ── Filename ────────────────────────────────────────────────────────
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Filename (.json)", className="fw-semibold"),
+                dbc.Input(id="cfg-filename",
+                          placeholder="e.g. 0_config_composite_Active_Power.json",
+                          size="sm"),
+                html.Small("File will be saved to the selected config folder.",
+                           className="text-muted"),
+            ]),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Config type badge + stores ───────────────────────────────────────
+        html.Div(id="cfg-type-badge", className="mb-2"),
+        dcc.Store(id="store-cfg-type", data=CFG_TYPE_SERIES),
+        dcc.Store(id="store-gantt-color-count", data=0),
+        dcc.Store(id="store-gantt-palette-count", data=0),
+
+        html.Hr(className="my-2"),
+
+        # ── Metadata ────────────────────────────────────────────────────────
+        dbc.Row([dbc.Col(html.H6("📝 Metadata", className="fw-bold text-primary"))]),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Description", className="small fw-semibold"),
+                dbc.Textarea(id="cfg-description", rows=2, size="sm",
+                             placeholder="Brief description of this config…"),
+            ], width=6),
+            dbc.Col([
+                dbc.Label("Usage Notes", className="small fw-semibold"),
+                dbc.Textarea(id="cfg-usage", rows=2, size="sm",
+                             placeholder="Usage instructions…"),
+            ], width=6),
+        ], className="mb-3"),
+
+        html.Hr(className="my-2"),
+
+        # ── Gantt section (visible when editing a gantt config) ──────────────
+        dbc.Collapse(
+            id="cfg-gantt-collapse",
+            is_open=False,
+            children=[_gantt_editor_section(), html.Hr(className="my-2")],
+        ),
+
+        # ── Series-data sections (collapsed when gantt config) ───────────────
+        dbc.Collapse(
+            id="cfg-series-sections-collapse",
+            is_open=True,
+            children=_series_data_sections(),
+        ),
+    ]
+
+
 def _editor_modal():
     return dbc.Modal(
         id="cfg-editor-modal", size="xl", scrollable=True, is_open=False,
@@ -417,7 +621,7 @@ def config_manager_tab():
                         dbc.Col(dbc.Label("Folder Path:"), width=2),
                         dbc.Col(
                             dbc.Input(id="cfgmgr-folder-path",
-                                      placeholder="e.g. configs/  or  C:\\my_configs",
+                                      placeholder="e.g. 5_configs/  or  C:\\my_configs",
                                       size="sm"),
                             width=True,
                         ),

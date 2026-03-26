@@ -1,4 +1,4 @@
-"""app/dash_app.py — DashApp orchestrator: wires layout, callbacks, and routes."""
+"""1_app/dash_app.py — DashApp orchestrator: wires layout, callbacks, and routes."""
 import os
 import tempfile
 
@@ -21,9 +21,9 @@ except ImportError:
 class DashApp:
     """
     Thin orchestrator — owns the Dash instance and wires together:
-      • AppState   (shared mutable state / backend objects)
+      • AppState   (shared mutable state / 2_backend objects)
       • layout.py  (all HTML / Dash component trees)
-      • callbacks.py (all @app.callback registrations)
+      • callbacks.py (all @1_app.callback registrations)
       • routes.py  (Flask file/folder picker endpoints + Tkinter dispatcher)
     """
 

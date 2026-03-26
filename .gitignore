@@ -6,8 +6,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-assets/
+4_assets/
 *.png
 *.pptx
-sample_ppt_template
-sample_batch_data
+6_templates
+7_samples/batch_data

@@ -1,4 +1,4 @@
-"""app/routes.py — Flask file/folder picker endpoints via a Tkinter dispatcher thread."""
+"""1_app/routes.py — Flask file/folder picker endpoints via a Tkinter dispatcher thread."""
 import queue
 import threading
 

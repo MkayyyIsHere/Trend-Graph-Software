@@ -18,4 +18,4 @@ DASH_PORT = 8052
 DASH_HOST = "127.0.0.1"
 
 # Config Manager defaults
-DEFAULT_CONFIGS_DIR = 'configs'
+DEFAULT_CONFIGS_DIR = '5_configs'

@@ -1,5 +1,5 @@
 # =============================================================================
-# CHART GENERATION  (unchanged — Matplotlib backend)
+# CHART GENERATION  (unchanged — Matplotlib 2_backend)
 # =============================================================================
 import re
 import io
@@ -364,7 +364,7 @@ class CompositeChartGenerator:
         col_tid_w     = 0.30
         col_desc_x    = col_tid_w + 0.04
         pad_x         = 0.03
-        legend_wrap_w = max(10, int((1.0 - col_desc_x - pad_x) / (legend_fs * 0.012)))
+        legend_wrap_w = max(10, int((1.0 - col_desc_x - pad_x) / (legend_fs * 0.0012)))
 
         fp_bold   = FontProperties(family=font_fam, size=legend_fs, weight='bold')
         fp_normal = FontProperties(family=font_fam, size=legend_fs, weight='normal')

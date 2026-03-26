@@ -1,4 +1,4 @@
-"""app/layout.py — All Dash HTML/component layout builders."""
+"""1_app/layout.py — All Dash HTML/component layout builders."""
 import os
 
 from dash import dcc, html, dash_table
@@ -25,12 +25,13 @@ _LOG_STYLE_BASE = {
     'overflowY': 'auto', 'fontSize': '11px',
     'borderRadius': '6px', 'padding': '10px',
     'fontFamily': 'monospace', 'whiteSpace': 'pre-wrap',
+    'color': 'inherit',
 }
 
 
 def ensure_assets():
-    """Write log-color CSS into assets/ so Dash auto-loads it."""
-    assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets')
+    """Write log-color CSS into 4_assets/ so Dash auto-loads it."""
+    assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '4_assets')
     os.makedirs(assets_dir, exist_ok=True)
     css_path = os.path.join(assets_dir, 'log_colors.css')
     if not os.path.exists(css_path):
@@ -112,12 +113,14 @@ def _chart_tab():
         'log-card', 'log-collapse', 'log-output', 'log-text-hidden',
         'btn-copy-log', 'btn-clear-log', 'btn-toggle-log', 'Log',
     )
+
+    # remove extra_style={'color': '#c3e88d'} from the batch_log call
     batch_log = collapsible_log_card(
         'batch-log-card', 'batch-log-collapse', 'batch-log-output', 'batch-log-text-hidden',
         'btn-copy-batch-log', 'btn-clear-batch-log', 'btn-toggle-batch-log',
         'Batch Progress Log', bg_color='#1e2030', height='220px',
-        extra_style={'color': '#c3e88d'},
     )
+
     return dbc.Tab(label="📊 Chart Plotter", tab_id="tab-chart", children=[
         dbc.Container(fluid=True, children=[
             # Gantt / Event
@@ -334,7 +337,7 @@ def _stores():
 # ── Public entry point ───────────────────────────────────────────────────────
 
 def build_layout():
-    """Return the complete Dash app layout."""
+    """Return the complete Dash 1_app layout."""
     header = dbc.Navbar(
         dbc.Container([
             html.Span("📊 Composite Data & Gantt Plotter", className="navbar-brand fw-bold"),

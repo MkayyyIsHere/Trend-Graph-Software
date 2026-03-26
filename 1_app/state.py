@@ -1,4 +1,4 @@
-"""app/state.py — Thread-safe shared state for the Dash application."""
+"""1_app/state.py — Thread-safe shared state for the Dash application."""
 import os
 import threading
 from typing import List, Optional

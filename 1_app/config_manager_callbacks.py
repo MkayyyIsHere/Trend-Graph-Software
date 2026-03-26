@@ -1,4 +1,4 @@
-"""app/config_manager_callbacks.py — All callbacks for the ⚙️ Config Manager tab."""
+"""1_app/config_manager_callbacks.py — All callbacks for the ⚙️ Config Manager tab."""
 
 import json
 import os
@@ -8,7 +8,10 @@ from dash import Input, Output, State, ctx, html, no_update, ALL, MATCH
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from app.config_manager_layout import COLOUR_PALETTES, _series_row
+from app.config_manager_layout import (
+    COLOUR_PALETTES, CFG_TYPE_SERIES, CFG_TYPE_GANTT,
+    _series_row, _gantt_color_row, _palette_color_row,
+)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -39,6 +42,8 @@ def _parse_color(hex_val: str, fallback: str = "#000000") -> str:
         return hex_val.strip()
     return fallback
 
+
+# ── Series config helpers ─────────────────────────────────────────────────────
 
 def _build_config_from_form(
     filename, description, usage,
@@ -175,6 +180,99 @@ def _populate_form_from_config(cfg: dict):
     }
 
 
+# ── Gantt config helpers ──────────────────────────────────────────────────────
+
+def _detect_config_type(cfg: dict) -> str:
+    """Return CFG_TYPE_GANTT if JSON is a gantt/event config, else CFG_TYPE_SERIES."""
+    if "gantt" in cfg or "gantt_colors" in cfg:
+        return CFG_TYPE_GANTT
+    return CFG_TYPE_SERIES
+
+
+def _build_gantt_from_form(
+    filename, description, usage,
+    bar_alpha, bar_height, edge_hex, edge_width,
+    test_ids, color_hexes,
+    palette_hexes,
+) -> dict:
+    """Build a gantt config dict from form values."""
+    gantt_colors = {}
+    n_ids = len(test_ids) if test_ids else 0
+    for i in range(n_ids):
+        tid = (test_ids[i] or "").strip()
+        if tid:
+            gantt_colors[tid] = _parse_color(
+                color_hexes[i] if color_hexes and i < len(color_hexes) else "#808080",
+                "#808080",
+            )
+
+    palette = [
+        _parse_color(c, "#1f77b4")
+        for c in (palette_hexes or [])
+        if c
+    ]
+    if not palette:
+        palette = ["#1f77b4"]
+
+    gantt_colors["default_palette"] = palette
+
+    return {
+        "_description": description or "",
+        "_usage": usage or "",
+        "gantt": {
+            "bar_alpha":        _safe_float(bar_alpha, 0.3),
+            "bar_height_ratio": _safe_float(bar_height, 1.0),
+            "edge_color":       _parse_color(edge_hex, "#000000"),
+            "edge_width":       _safe_float(edge_width, 0.2),
+        },
+        "gantt_colors": gantt_colors,
+    }
+
+
+def _populate_gantt_form(cfg: dict):
+    """Extract gantt form values from a gantt config dict."""
+    gantt  = cfg.get("gantt", {})
+    colors = cfg.get("gantt_colors", {})
+    palette = colors.get("default_palette", ["#1f77b4"])
+
+    # Build color rows — skip meta / palette keys
+    skip = {"_description", "_default_palette_info", "default_palette"}
+    color_rows = []
+    for k, v in colors.items():
+        if k in skip or k.startswith("_"):
+            continue
+        color_rows.append(_gantt_color_row(len(color_rows), k, v))
+
+    palette_rows = [_palette_color_row(i, c) for i, c in enumerate(palette)]
+
+    # Normalise edge_color to hex for the colour swatch
+    edge_color = gantt.get("edge_color", "black")
+    named_to_hex = {
+        "black": "#000000", "white": "#ffffff",
+        "gray":  "#808080", "grey":  "#808080",
+        "red":   "#ff0000", "blue":  "#0000ff",
+    }
+    if isinstance(edge_color, str):
+        edge_hex = named_to_hex.get(edge_color.lower(), edge_color)
+        if not re.match(r"^#[0-9a-fA-F]{6}$", edge_hex):
+            edge_hex = "#000000"
+    else:
+        edge_hex = "#000000"
+
+    return {
+        "bar_alpha":    gantt.get("bar_alpha", 0.3),
+        "bar_height":   gantt.get("bar_height_ratio", 1.0),
+        "edge_hex":     edge_hex,
+        "edge_width":   gantt.get("edge_width", 0.2),
+        "color_rows":   color_rows,
+        "n_colors":     len(color_rows),
+        "palette_rows": palette_rows,
+        "n_palette":    len(palette_rows),
+    }
+
+
+# ── File list renderer ────────────────────────────────────────────────────────
+
 def _render_file_list(files: list[str], selected: str | None) -> list:
     if not files:
         return [html.P("No JSON files found in this folder.",
@@ -197,10 +295,10 @@ def _render_file_list(files: list[str], selected: str | None) -> list:
     return [dbc.ListGroup(items, flush=True)]
 
 
-# ── Registration ─────────────────────────────────────────────────────────────
+# ── Registration ──────────────────────────────────────────────────────────────
 
 def register_config_manager_callbacks(app, state):
-    """Register all Config Manager callbacks on *app*."""
+    """Register all Config Manager callbacks on *1_app*."""
 
     # ── Browse button → Flask pick endpoint (clientside) ─────────────────
     app.clientside_callback(
@@ -310,68 +408,81 @@ def register_config_manager_callbacks(app, state):
 
     # ── Open editor: New / Edit / Clone ──────────────────────────────────
     @app.callback(
-        Output("cfg-editor-modal",       "is_open",  allow_duplicate=True),
-        Output("cfg-editor-title",       "children"),
-        Output("store-cfgmgr-edit-mode", "data"),
-        Output("cfg-filename",           "value"),
-        Output("cfg-description",        "value"),
-        Output("cfg-usage",              "value"),
-        Output("cfg-series-container",   "children"),
-        Output("store-series-count",     "data"),
-        Output("cfg-chart-title",        "value"),
-        Output("cfg-bg-color-swatch",    "value"),
-        Output("cfg-bg-color-hex",       "value"),
-        Output("cfg-res-w",              "value"),
-        Output("cfg-res-h",              "value"),
-        Output("cfg-dpi",                "value"),
-        Output("cfg-x-label",            "value"),
-        Output("cfg-y-label",            "value"),
-        Output("cfg-y-min",              "value"),
-        Output("cfg-y-max",              "value"),
-        Output("cfg-x-min",              "value"),
-        Output("cfg-x-max",              "value"),
-        Output("cfg-grid-visible",       "value"),
-        Output("cfg-grid-axis",          "value"),
-        Output("cfg-grid-linestyle",     "value"),
-        Output("cfg-grid-alpha",         "value"),
-        Output("cfg-grid-width",         "value"),
-        Output("cfg-grid-color-swatch",  "value"),
-        Output("cfg-grid-color-hex",     "value"),
-        Output("cfg-sp-left",            "value"),
-        Output("cfg-sp-right",           "value"),
-        Output("cfg-sp-top",             "value"),
-        Output("cfg-sp-bottom",          "value"),
-        Output("cfg-sp-lgx",             "value"),
-        Output("cfg-sp-lgy",             "value"),
-        Output("cfg-sp-lgw",             "value"),
-        Output("cfg-r-font-scale",       "value"),
-        Output("cfg-r-lw-scale",         "value"),
-        Output("cfg-r-title-fs",         "value"),
-        Output("cfg-r-axis-fs",          "value"),
-        Output("cfg-r-tick-fs",          "value"),
-        Output("cfg-r-legend-fs",        "value"),
-        Output("cfg-r-legend-ff",        "value"),
-        Output("cfg-r-pad-top",          "value"),
-        Output("cfg-r-sep-above",        "value"),
-        Output("cfg-r-sep-below",        "value"),
-        Output("cfg-r-gap-slots",        "value"),
-        Output("cfg-save-status",        "children", allow_duplicate=True),
-        Input("btn-cfgmgr-new",          "n_clicks"),
-        Input("btn-cfgmgr-edit",         "n_clicks"),
-        Input("btn-cfgmgr-clone",        "n_clicks"),
-        State("store-cfgmgr-selected",   "data"),
-        State("cfgmgr-folder-path",      "value"),
+        Output("cfg-editor-modal",             "is_open",  allow_duplicate=True),
+        Output("cfg-editor-title",             "children"),
+        Output("store-cfgmgr-edit-mode",       "data"),
+        Output("cfg-filename",                 "value"),
+        Output("cfg-description",              "value"),
+        Output("cfg-usage",                    "value"),
+        # Series-data section
+        Output("cfg-series-container",         "children"),
+        Output("store-series-count",           "data"),
+        Output("cfg-chart-title",              "value"),
+        Output("cfg-bg-color-swatch",          "value"),
+        Output("cfg-bg-color-hex",             "value"),
+        Output("cfg-res-w",                    "value"),
+        Output("cfg-res-h",                    "value"),
+        Output("cfg-dpi",                      "value"),
+        Output("cfg-x-label",                  "value"),
+        Output("cfg-y-label",                  "value"),
+        Output("cfg-y-min",                    "value"),
+        Output("cfg-y-max",                    "value"),
+        Output("cfg-x-min",                    "value"),
+        Output("cfg-x-max",                    "value"),
+        Output("cfg-grid-visible",             "value"),
+        Output("cfg-grid-axis",               "value"),
+        Output("cfg-grid-linestyle",           "value"),
+        Output("cfg-grid-alpha",               "value"),
+        Output("cfg-grid-width",               "value"),
+        Output("cfg-grid-color-swatch",        "value"),
+        Output("cfg-grid-color-hex",           "value"),
+        Output("cfg-sp-left",                  "value"),
+        Output("cfg-sp-right",                 "value"),
+        Output("cfg-sp-top",                   "value"),
+        Output("cfg-sp-bottom",                "value"),
+        Output("cfg-sp-lgx",                   "value"),
+        Output("cfg-sp-lgy",                   "value"),
+        Output("cfg-sp-lgw",                   "value"),
+        Output("cfg-r-font-scale",             "value"),
+        Output("cfg-r-lw-scale",               "value"),
+        Output("cfg-r-title-fs",               "value"),
+        Output("cfg-r-axis-fs",                "value"),
+        Output("cfg-r-tick-fs",                "value"),
+        Output("cfg-r-legend-fs",              "value"),
+        Output("cfg-r-legend-ff",              "value"),
+        Output("cfg-r-pad-top",                "value"),
+        Output("cfg-r-sep-above",              "value"),
+        Output("cfg-r-sep-below",              "value"),
+        Output("cfg-r-gap-slots",              "value"),
+        # Gantt section
+        Output("cfg-gantt-bar-alpha",          "value"),
+        Output("cfg-gantt-bar-height",         "value"),
+        Output("cfg-gantt-edge-swatch",        "value"),
+        Output("cfg-gantt-edge-hex",           "value"),
+        Output("cfg-gantt-edge-width",         "value"),
+        Output("cfg-gantt-colors-container",   "children"),
+        Output("store-gantt-color-count",      "data"),
+        Output("cfg-gantt-palette-container",  "children"),
+        Output("store-gantt-palette-count",    "data"),
+        # Collapse visibility + type badge
+        Output("cfg-gantt-collapse",           "is_open"),
+        Output("cfg-series-sections-collapse", "is_open"),
+        Output("store-cfg-type",               "data"),
+        Output("cfg-type-badge",               "children"),
+        Output("cfg-save-status",              "children", allow_duplicate=True),
+        Input("btn-cfgmgr-new",                "n_clicks"),
+        Input("btn-cfgmgr-edit",               "n_clicks"),
+        Input("btn-cfgmgr-clone",              "n_clicks"),
+        State("store-cfgmgr-selected",         "data"),
+        State("cfgmgr-folder-path",            "value"),
         prevent_initial_call=True,
     )
     def open_editor(n_new, n_edit, n_clone, selected, folder):
         trigger = ctx.triggered_id
 
-        BLANK = (
-            True, "New Config", "new",
-            "", "", "",
+        SERIES_DEFAULTS = (
             [_series_row(0)], 1,
-            "",
-            "#ffffff", "#ffffff",
+            "", "#ffffff", "#ffffff",
             2560, 1440, 96,
             "", "",
             "", "", "", "",
@@ -382,7 +493,25 @@ def register_config_manager_callbacks(app, state):
             1.0, 1.0, 20, 15, 12, 13,
             "sans-serif",
             0.5, 0.4, 0.4, 0.5,
-            "",
+        )
+        GANTT_DEFAULTS = (
+            0.3, 1.0, "#000000", "#000000", 0.2,
+            [], 0,
+            [], 0,
+        )
+
+        def _series_badge():
+            return dbc.Badge("📈 Series Config", color="primary", className="fs-6")
+
+        def _gantt_badge():
+            return dbc.Badge("🎨 Gantt / Event Config", color="success", className="fs-6")
+
+        BLANK = (
+            True, "New Config", "new",
+            "", "", "",
+            *SERIES_DEFAULTS,
+            *GANTT_DEFAULTS,
+            False, True, CFG_TYPE_SERIES, _series_badge(), "",
         )
 
         if trigger == "btn-cfgmgr-new":
@@ -398,7 +527,7 @@ def register_config_manager_callbacks(app, state):
         except Exception:
             raise PreventUpdate
 
-        rows, n_series, fv = _populate_form_from_config(cfg)
+        cfg_type = _detect_config_type(cfg)
 
         if trigger == "btn-cfgmgr-edit":
             mode  = "edit"
@@ -409,6 +538,26 @@ def register_config_manager_callbacks(app, state):
             title = f"Clone — {selected}"
             fname = ""
 
+        if cfg_type == CFG_TYPE_GANTT:
+            gv = _populate_gantt_form(cfg)
+            return (
+                True, title, mode,
+                fname,
+                cfg.get("_description", ""),
+                cfg.get("_usage", ""),
+                # Series sections — blank/defaults (will be collapsed)
+                *SERIES_DEFAULTS,
+                # Gantt section
+                gv["bar_alpha"], gv["bar_height"],
+                gv["edge_hex"], gv["edge_hex"], gv["edge_width"],
+                gv["color_rows"], gv["n_colors"],
+                gv["palette_rows"], gv["n_palette"],
+                # Collapse states: gantt open, series closed
+                True, False, CFG_TYPE_GANTT, _gantt_badge(), "",
+            )
+
+        # ── Series config ─────────────────────────────────────────────────
+        rows, n_series, fv = _populate_form_from_config(cfg)
         return (
             True, title, mode,
             fname, fv["description"], fv["usage"],
@@ -427,7 +576,10 @@ def register_config_manager_callbacks(app, state):
             fv["r_title_fs"], fv["r_axis_fs"], fv["r_tick_fs"], fv["r_legend_fs"],
             fv["r_legend_ff"],
             fv["r_pad_top"], fv["r_sep_above"], fv["r_sep_below"], fv["r_gap_slots"],
-            "",
+            # Gantt section — blank/defaults (will be collapsed)
+            *GANTT_DEFAULTS,
+            # Collapse states: series open, gantt closed
+            False, True, CFG_TYPE_SERIES, _series_badge(), "",
         )
 
     # ── Add series ────────────────────────────────────────────────────────
@@ -466,6 +618,78 @@ def register_config_manager_callbacks(app, state):
         ]
         return new_rows, max(0, (count or 1) - 1)
 
+    # ── Add gantt Test ID colour row ──────────────────────────────────────
+    @app.callback(
+        Output("cfg-gantt-colors-container", "children", allow_duplicate=True),
+        Output("store-gantt-color-count",    "data",     allow_duplicate=True),
+        Input("btn-add-gantt-color",         "n_clicks"),
+        State("store-gantt-color-count",     "data"),
+        State("cfg-gantt-colors-container",  "children"),
+        prevent_initial_call=True,
+    )
+    def add_gantt_color(_, count, current):
+        count = count or 0
+        return (current or []) + [_gantt_color_row(count)], count + 1
+
+    # ── Remove gantt Test ID colour row ──────────────────────────────────
+    @app.callback(
+        Output("cfg-gantt-colors-container", "children", allow_duplicate=True),
+        Output("store-gantt-color-count",    "data",     allow_duplicate=True),
+        Input({"type": "btn-remove-gantt-color", "index": ALL}, "n_clicks"),
+        State("cfg-gantt-colors-container",  "children"),
+        State("store-gantt-color-count",     "data"),
+        prevent_initial_call=True,
+    )
+    def remove_gantt_color(n_clicks_list, current, count):
+        if not any(n for n in n_clicks_list if n):
+            raise PreventUpdate
+        triggered = ctx.triggered_id
+        if triggered is None:
+            raise PreventUpdate
+        remove_idx = triggered["index"]
+        new_rows = [
+            r for r in (current or [])
+            if not (isinstance(r, dict)
+                    and r.get("props", {}).get("id") == f"gantt-color-card-{remove_idx}")
+        ]
+        return new_rows, max(0, (count or 1) - 1)
+
+    # ── Add default palette colour row ────────────────────────────────────
+    @app.callback(
+        Output("cfg-gantt-palette-container", "children", allow_duplicate=True),
+        Output("store-gantt-palette-count",   "data",     allow_duplicate=True),
+        Input("btn-add-palette-color",        "n_clicks"),
+        State("store-gantt-palette-count",    "data"),
+        State("cfg-gantt-palette-container",  "children"),
+        prevent_initial_call=True,
+    )
+    def add_palette_color(_, count, current):
+        count = count or 0
+        return (current or []) + [_palette_color_row(count)], count + 1
+
+    # ── Remove default palette colour row ─────────────────────────────────
+    @app.callback(
+        Output("cfg-gantt-palette-container", "children", allow_duplicate=True),
+        Output("store-gantt-palette-count",   "data",     allow_duplicate=True),
+        Input({"type": "btn-remove-palette-color", "index": ALL}, "n_clicks"),
+        State("cfg-gantt-palette-container",  "children"),
+        State("store-gantt-palette-count",    "data"),
+        prevent_initial_call=True,
+    )
+    def remove_palette_color(n_clicks_list, current, count):
+        if not any(n for n in n_clicks_list if n):
+            raise PreventUpdate
+        triggered = ctx.triggered_id
+        if triggered is None:
+            raise PreventUpdate
+        remove_idx = triggered["index"]
+        new_rows = [
+            r for r in (current or [])
+            if not (isinstance(r, dict)
+                    and r.get("props", {}).get("id") == f"gantt-palette-card-{remove_idx}")
+        ]
+        return new_rows, max(0, (count or 1) - 1)
+
     # ── Colour swatch ↔ hex sync (series) ────────────────────────────────
     app.clientside_callback(
         "function(v) { return v; }",
@@ -484,10 +708,47 @@ def register_config_manager_callbacks(app, state):
         prevent_initial_call=True,
     )
 
-    # ── Colour swatch ↔ hex sync (bg & grid) ─────────────────────────────
+    # ── Colour swatch ↔ hex sync (gantt Test ID colours) ─────────────────
+    app.clientside_callback(
+        "function(v) { return v; }",
+        Output({"type": "gantt-color-hex",    "index": MATCH}, "value"),
+        Input( {"type": "gantt-color-swatch", "index": MATCH}, "value"),
+        prevent_initial_call=True,
+    )
+    app.clientside_callback(
+        """function(v) {
+            if (!v) return window.dash_clientside.no_update;
+            v = v.trim();
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
+        }""",
+        Output({"type": "gantt-color-swatch", "index": MATCH}, "value"),
+        Input( {"type": "gantt-color-hex",    "index": MATCH}, "value"),
+        prevent_initial_call=True,
+    )
+
+    # ── Colour swatch ↔ hex sync (gantt palette colours) ─────────────────
+    app.clientside_callback(
+        "function(v) { return v; }",
+        Output({"type": "gantt-palette-hex",    "index": MATCH}, "value"),
+        Input( {"type": "gantt-palette-swatch", "index": MATCH}, "value"),
+        prevent_initial_call=True,
+    )
+    app.clientside_callback(
+        """function(v) {
+            if (!v) return window.dash_clientside.no_update;
+            v = v.trim();
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
+        }""",
+        Output({"type": "gantt-palette-swatch", "index": MATCH}, "value"),
+        Input( {"type": "gantt-palette-hex",    "index": MATCH}, "value"),
+        prevent_initial_call=True,
+    )
+
+    # ── Colour swatch ↔ hex sync (bg, grid, gantt edge) ──────────────────
     for swatch_id, hex_id in [
         ("cfg-bg-color-swatch",   "cfg-bg-color-hex"),
         ("cfg-grid-color-swatch", "cfg-grid-color-hex"),
+        ("cfg-gantt-edge-swatch", "cfg-gantt-edge-hex"),
     ]:
         app.clientside_callback(
             "function(v) { return v; }",
@@ -540,10 +801,12 @@ def register_config_manager_callbacks(app, state):
         Output("store-cfgmgr-selected", "data",      allow_duplicate=True),
         Input("btn-cfg-save", "n_clicks"),
         State("store-cfgmgr-edit-mode", "data"),
+        State("store-cfg-type",         "data"),
         State("cfgmgr-folder-path",     "value"),
         State("cfg-filename",           "value"),
         State("cfg-description",        "value"),
         State("cfg-usage",              "value"),
+        # Series states
         State({"type": "series-name",       "index": ALL}, "value"),
         State({"type": "series-value-col",  "index": ALL}, "value"),
         State({"type": "series-keywords",   "index": ALL}, "value"),
@@ -552,45 +815,53 @@ def register_config_manager_callbacks(app, state):
         State({"type": "series-linewidth",  "index": ALL}, "value"),
         State({"type": "series-linestyle",  "index": ALL}, "value"),
         State({"type": "series-marker",     "index": ALL}, "value"),
-        State("cfg-chart-title",   "value"),
-        State("cfg-bg-color-hex",  "value"),
-        State("cfg-res-w",         "value"),
-        State("cfg-res-h",         "value"),
-        State("cfg-dpi",           "value"),
-        State("cfg-x-label",       "value"),
-        State("cfg-y-label",       "value"),
-        State("cfg-y-min",         "value"),
-        State("cfg-y-max",         "value"),
-        State("cfg-x-min",         "value"),
-        State("cfg-x-max",         "value"),
+        State("cfg-chart-title",    "value"),
+        State("cfg-bg-color-hex",   "value"),
+        State("cfg-res-w",          "value"),
+        State("cfg-res-h",          "value"),
+        State("cfg-dpi",            "value"),
+        State("cfg-x-label",        "value"),
+        State("cfg-y-label",        "value"),
+        State("cfg-y-min",          "value"),
+        State("cfg-y-max",          "value"),
+        State("cfg-x-min",          "value"),
+        State("cfg-x-max",          "value"),
         State("cfg-grid-visible",   "value"),
         State("cfg-grid-axis",      "value"),
         State("cfg-grid-linestyle", "value"),
         State("cfg-grid-alpha",     "value"),
         State("cfg-grid-width",     "value"),
         State("cfg-grid-color-hex", "value"),
-        State("cfg-sp-left",    "value"),
-        State("cfg-sp-right",   "value"),
-        State("cfg-sp-top",     "value"),
-        State("cfg-sp-bottom",  "value"),
-        State("cfg-sp-lgx",     "value"),
-        State("cfg-sp-lgy",     "value"),
-        State("cfg-sp-lgw",     "value"),
-        State("cfg-r-font-scale",  "value"),
-        State("cfg-r-lw-scale",    "value"),
-        State("cfg-r-title-fs",    "value"),
-        State("cfg-r-axis-fs",     "value"),
-        State("cfg-r-tick-fs",     "value"),
-        State("cfg-r-legend-fs",   "value"),
-        State("cfg-r-legend-ff",   "value"),
-        State("cfg-r-pad-top",     "value"),
-        State("cfg-r-sep-above",   "value"),
-        State("cfg-r-sep-below",   "value"),
-        State("cfg-r-gap-slots",   "value"),
+        State("cfg-sp-left",        "value"),
+        State("cfg-sp-right",       "value"),
+        State("cfg-sp-top",         "value"),
+        State("cfg-sp-bottom",      "value"),
+        State("cfg-sp-lgx",         "value"),
+        State("cfg-sp-lgy",         "value"),
+        State("cfg-sp-lgw",         "value"),
+        State("cfg-r-font-scale",   "value"),
+        State("cfg-r-lw-scale",     "value"),
+        State("cfg-r-title-fs",     "value"),
+        State("cfg-r-axis-fs",      "value"),
+        State("cfg-r-tick-fs",      "value"),
+        State("cfg-r-legend-fs",    "value"),
+        State("cfg-r-legend-ff",    "value"),
+        State("cfg-r-pad-top",      "value"),
+        State("cfg-r-sep-above",    "value"),
+        State("cfg-r-sep-below",    "value"),
+        State("cfg-r-gap-slots",    "value"),
+        # Gantt states
+        State("cfg-gantt-bar-alpha",  "value"),
+        State("cfg-gantt-bar-height", "value"),
+        State("cfg-gantt-edge-hex",   "value"),
+        State("cfg-gantt-edge-width", "value"),
+        State({"type": "gantt-test-id",     "index": ALL}, "value"),
+        State({"type": "gantt-color-hex",   "index": ALL}, "value"),
+        State({"type": "gantt-palette-hex", "index": ALL}, "value"),
         prevent_initial_call=True,
     )
     def save_config(
-        _, mode, folder, filename,
+        _, mode, cfg_type, folder, filename,
         description, usage,
         series_names, series_vcols, series_kws, series_alphas,
         series_color_hexes, series_linewidths, series_linestyles, series_markers,
@@ -600,6 +871,8 @@ def register_config_manager_callbacks(app, state):
         sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy, sp_lgw,
         r_font_scale, r_lw_scale, r_title_fs, r_axis_fs, r_tick_fs, r_legend_fs,
         r_legend_ff, r_pad_top, r_sep_above, r_sep_below, r_gap_slots,
+        gantt_bar_alpha, gantt_bar_height, gantt_edge_hex, gantt_edge_width,
+        gantt_test_ids, gantt_color_hexes, gantt_palette_hexes,
     ):
         ERR = lambda msg: (  # noqa: E731
             dbc.Alert(msg, color="danger", className="py-1"),
@@ -617,29 +890,39 @@ def register_config_manager_callbacks(app, state):
         fname    = re.sub(r'[<>:"/\\|?*]', "_", fname)
         out_path = os.path.join(folder.strip(), fname)
 
-        cfg = _build_config_from_form(
-            fname, description, usage,
-            series_names, series_vcols, series_kws, series_alphas,
-            series_color_hexes, series_linewidths, series_linestyles, series_markers,
-            chart_title, bg_hex, res_w, res_h, dpi,
-            x_label, y_label, y_min, y_max, x_min, x_max,
-            grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
-            sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy, sp_lgw,
-            r_font_scale, r_lw_scale, r_title_fs, r_axis_fs, r_tick_fs, r_legend_fs,
-            r_legend_ff, r_pad_top, r_sep_above, r_sep_below, r_gap_slots,
-        )
+        if cfg_type == CFG_TYPE_GANTT:
+            cfg = _build_gantt_from_form(
+                fname, description, usage,
+                gantt_bar_alpha, gantt_bar_height, gantt_edge_hex, gantt_edge_width,
+                gantt_test_ids, gantt_color_hexes,
+                gantt_palette_hexes,
+            )
+            n_ids   = len([k for k in cfg.get("gantt_colors", {})
+                           if not k.startswith("_") and k != "default_palette"])
+            summary = f"✓ Saved gantt config: {fname}  ({n_ids} Test IDs)"
+        else:
+            cfg = _build_config_from_form(
+                fname, description, usage,
+                series_names, series_vcols, series_kws, series_alphas,
+                series_color_hexes, series_linewidths, series_linestyles, series_markers,
+                chart_title, bg_hex, res_w, res_h, dpi,
+                x_label, y_label, y_min, y_max, x_min, x_max,
+                grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
+                sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy, sp_lgw,
+                r_font_scale, r_lw_scale, r_title_fs, r_axis_fs, r_tick_fs, r_legend_fs,
+                r_legend_ff, r_pad_top, r_sep_above, r_sep_below, r_gap_slots,
+            )
+            summary = f"✓ Saved: {fname}  ({len(cfg.get('series', []))} series)"
+
         try:
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2, ensure_ascii=False)
         except Exception as e:
             return ERR(f"❌ Error saving: {e}")
 
-        files      = _list_json_files(folder.strip())
-        file_list  = _render_file_list(files, fname)
-        action     = dbc.Alert(
-            f"✓ Saved: {fname}  ({len(cfg.get('series', []))} series)",
-            color="success", className="py-1 mb-0",
-        )
+        files     = _list_json_files(folder.strip())
+        file_list = _render_file_list(files, fname)
+        action    = dbc.Alert(summary, color="success", className="py-1 mb-0")
         return "", False, file_list, action, fname
 
     # ── Delete — open confirm ─────────────────────────────────────────────
