@@ -6,7 +6,10 @@ import os
 import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from typing import List, Callable
+
+import kaleido
 
 from backend.processors import SeriesDataProcessor, EventDataProcessor
 from backend.config import ConfigManager, GanttConfigManager
@@ -40,8 +43,14 @@ def run_batch(
     """
     blog = batch_log.append
 
+    def ts():
+        """Return current time as [HH:MM:SS] prefix."""
+        return datetime.now().strftime("[%H:%M:%S]")
+
+    _batch_start = datetime.now()
+
     blog("=" * 55)
-    blog(f"BATCH STARTED — {total} chart(s), {n_workers} parallel workers")
+    blog(f"{ts()} BATCH STARTED — {total} chart(s), {n_workers} parallel workers")
     blog(f"  Data files  : {len(data_files)}")
     blog(f"  Config files: {len(config_files)}")
     blog(f"  Output      : {out_folder}")
@@ -52,14 +61,56 @@ def run_batch(
             blog(f"  Resolution  : {res[0]}×{res[1]} px @ {dpi} DPI (from UI settings)")
     blog("=" * 55)
 
+    # Start one persistent kaleido browser process for the entire batch.
+    # All workers share this single server via its internal queue — this
+    # avoids the "Couldn't close or kill browser subprocess" error that
+    # occurs when multiple threads each try to spawn+destroy their own
+    # browser (especially on Python 3.14).
+    kaleido.start_sync_server(silence_warnings=True)
+    blog(f"{ts()} Kaleido server started (shared browser process)")
+
+    try:
+        _run_batch_body(
+            config_files, data_files, event_file, out_folder, total,
+            n_workers, logger, gantt_config, batch_log, stop_event,
+            on_done, override_chart, ts, _batch_start,
+        )
+    finally:
+        kaleido.stop_sync_server(silence_warnings=True)
+        blog(f"{ts()} Kaleido server stopped")
+
+
+def _run_batch_body(
+    config_files:   List[str],
+    data_files:     List[str],
+    event_file:     str,
+    out_folder:     str,
+    total:          int,
+    n_workers:      int,
+    logger,
+    gantt_config:   GanttConfigManager,
+    batch_log:      List[str],
+    stop_event:     threading.Event,
+    on_done:        Callable,
+    override_chart: dict = None,
+    ts:             Callable = None,
+    _batch_start:   datetime = None,
+):
+    """Inner body of run_batch — called after the kaleido server is live."""
+    blog = batch_log.append
+    if ts is None:
+        ts = lambda: datetime.now().strftime("[%H:%M:%S]")  # noqa: E731
+    if _batch_start is None:
+        _batch_start = datetime.now()
+
     # Load event/task data ONCE — shared across all workers (read-only)
     event_proc = EventDataProcessor(logger=logger)
     if not event_proc.load_csv(event_file):
-        blog("ABORTED — failed to load event CSV")
+        blog(f"{ts()} ABORTED — failed to load event CSV")
         on_done({'failed': True})
         return
     tasks = event_proc.get_tasks()
-    blog(f"Events loaded: {len(tasks)} tasks")
+    blog(f"{ts()} Events loaded: {len(tasks)} tasks")
 
     # Build all work items upfront
     work_items = []
@@ -121,8 +172,15 @@ def run_batch(
             fig = build_plotly_figure(cfg, all_dp, tasks, gantt_copy,
                                       width=width_px, height=height_px)
 
-            fig.write_image(out_path, format='png',
-                            width=width_px, height=height_px, scale=1)
+            # Use the global kaleido server (started once for the whole
+            # batch) — avoids per-call browser spawn/teardown which causes
+            # "Couldn't close or kill browser subprocess" under parallelism.
+            kaleido.write_fig_sync(
+                fig,
+                out_path,
+                opts={"format": "png", "width": width_px,
+                      "height": height_px, "scale": 1},
+            )
             return out_name, None   # success
 
         except Exception as e:
@@ -135,7 +193,7 @@ def run_batch(
             # Check E-stop between completed futures
             if stop_event.is_set() and not stopped:
                 stopped = True
-                blog("⚠ E-Stop signal received — cancelling remaining queued charts…")
+                blog(f"{ts()} ⚠ E-Stop signal received — cancelling remaining queued charts…")
                 cancelled = sum(1 for f in futures if f.cancel())
                 blog(f"  {cancelled} queued chart(s) cancelled")
 
@@ -144,17 +202,22 @@ def run_batch(
                 done_count += 1
                 progress = f"[{done_count}/{total}]"
                 if err:
-                    blog(f"  {progress} ✗ {err}")
+                    blog(f"  {ts()} {progress} ✗ {err}")
                     errors.append(err)
                 else:
-                    blog(f"  {progress} ✓ {out_name}")
+                    blog(f"  {ts()} {progress} ✓ {out_name}")
 
     blog("\n" + "=" * 55)
-    saved = done_count - len(errors)
+    saved   = done_count - len(errors)
+    elapsed = (datetime.now() - _batch_start).total_seconds()
+    elapsed_str = f"{int(elapsed // 60)}m {elapsed % 60:.1f}s" if elapsed >= 60 else f"{elapsed:.1f}s"
     if stopped:
-        blog(f"BATCH STOPPED — {saved}/{done_count} charts saved (of {total} total)")
+        blog(f"{ts()} BATCH STOPPED — {saved}/{done_count} charts saved (of {total} total)")
     else:
-        blog(f"BATCH COMPLETE — {saved}/{done_count} charts saved")
+        blog(f"{ts()} BATCH COMPLETE — {saved}/{done_count} charts saved")
+    blog(f"  Total time  : {elapsed_str}")
+    if total > 0 and done_count > 0:
+        blog(f"  Avg per chart: {elapsed / done_count:.1f}s")
     if errors:
         blog(f"{len(errors)} error(s):")
         for e in errors:

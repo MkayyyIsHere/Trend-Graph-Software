@@ -608,6 +608,152 @@ def _confirm_delete_modal():
     ])
 
 
+def _batch_profile_item(idx: int, filename: str, included: bool) -> dbc.Card:
+    """Build one sortable row for the Batch Profile list."""
+    badge_color = "primary" if included else "secondary"
+    label_style = {
+        "fontFamily": "monospace",
+        "wordBreak":  "break-all",
+        "opacity":    "1.0" if included else "0.45",
+    }
+    return dbc.Card(
+        id={"type": "bp-item-card", "index": idx},
+        className="mb-1 border-secondary",
+        style={"cursor": "grab"},
+        children=[
+            dbc.CardBody(
+                dbc.Row([
+                    # Drag handle
+                    dbc.Col(
+                        html.Span("⠿", style={
+                            "fontSize": "18px", "color": "#aaa",
+                            "cursor":   "grab",  "userSelect": "none",
+                            "lineHeight": "1",
+                        }),
+                        width="auto", className="d-flex align-items-center pe-0",
+                    ),
+                    # Rank badge
+                    dbc.Col(
+                        dbc.Badge(
+                            str(idx + 1),
+                            id={"type": "bp-rank-badge", "index": idx},
+                            color=badge_color,
+                            style={"minWidth": "26px", "textAlign": "center"},
+                        ),
+                        width="auto", className="d-flex align-items-center",
+                    ),
+                    # Filename label
+                    dbc.Col(
+                        html.Span(
+                            filename,
+                            id={"type": "bp-item-label", "index": idx},
+                            className="small",
+                            style=label_style,
+                        ),
+                        className="d-flex align-items-center",
+                    ),
+                    # Include / Exclude toggle
+                    dbc.Col(
+                        dbc.Switch(
+                            id={"type": "bp-item-switch", "index": idx},
+                            value=included,
+                            label="",
+                            className="mb-0",
+                        ),
+                        width="auto",
+                        className="d-flex align-items-center",
+                    ),
+                    # Up / Down buttons
+                    dbc.Col(
+                        html.Div([
+                            dbc.Button(
+                                "▲", size="sm", color="light",
+                                id={"type": "bp-btn-up",   "index": idx},
+                                className="py-0 px-1 me-1 border",
+                                style={"lineHeight": "1.4", "fontSize": "11px"},
+                            ),
+                            dbc.Button(
+                                "▼", size="sm", color="light",
+                                id={"type": "bp-btn-down", "index": idx},
+                                className="py-0 px-1 border",
+                                style={"lineHeight": "1.4", "fontSize": "11px"},
+                            ),
+                        ], className="d-flex"),
+                        width="auto", className="d-flex align-items-center",
+                    ),
+                ], align="center", className="g-2"),
+                className="py-1 px-2",
+            ),
+        ],
+    )
+
+
+def _batch_profile_card():
+    """Return the Batch Profile dbc.Card for the Config Manager tab."""
+    return dbc.Card(className="mb-3", children=[
+        dbc.CardHeader(dbc.Row([
+            dbc.Col(html.B("📋 Batch Profile"), width="auto"),
+            dbc.Col(
+                html.Small(
+                    "Choose which configs run during a batch job and set their order.",
+                    className="text-muted",
+                ),
+                className="d-flex align-items-center ms-2",
+            ),
+            dbc.Col(html.Div([
+                dbc.Button(
+                    "💾 Save Profile", id="btn-bp-save",
+                    color="primary", size="sm", className="me-1",
+                ),
+                dbc.Button(
+                    "↺ Reset to Alpha", id="btn-bp-reset",
+                    color="secondary", size="sm", outline=True,
+                ),
+            ], className="d-flex"), className="ms-auto", width="auto"),
+        ], align="center", justify="between")),
+
+        dbc.CardBody([
+            # Status / save feedback
+            html.Div(id="bp-status", className="mb-2 small"),
+
+            # Summary bar — shows counts + colour-coded file badges
+            html.Div(
+                id="bp-summary-bar",
+                className="mb-2",
+                children=html.Small(
+                    "Load a config folder above to build the profile.",
+                    className="text-muted",
+                ),
+            ),
+
+            # Sortable list
+            html.Div(
+                id="bp-item-list",
+                style={"maxHeight": "360px", "overflowY": "auto"},
+                children=[
+                    html.P("No folder loaded.", className="text-muted small mb-0"),
+                ],
+            ),
+
+            html.Hr(className="my-2"),
+
+            # Numbered run-order preview
+            html.Div([
+                html.B("Run order: ", className="small"),
+                html.Span(
+                    id="bp-order-preview",
+                    className="small text-muted",
+                    children="—",
+                ),
+            ]),
+
+            # Hidden stores
+            dcc.Store(id="store-bp-order",  data=[]),   # list of {filename, included}
+            dcc.Store(id="store-bp-folder", data=""),   # folder that was last loaded
+        ]),
+    ])
+
+
 def config_manager_tab():
     """Return the ⚙️ Config Manager dbc.Tab."""
     return dbc.Tab(label="⚙️ Config Manager", tab_id="tab-config-manager", children=[
@@ -638,6 +784,9 @@ def config_manager_tab():
                     html.Div(id="cfgmgr-folder-status", className="text-muted small"),
                 ]),
             ]),
+
+            # ── Batch Profile ────────────────────────────────────────────
+            _batch_profile_card(),
 
             # ── File list + action toolbar ───────────────────────────────
             dbc.Card(className="mb-3", children=[

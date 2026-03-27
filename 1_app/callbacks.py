@@ -25,6 +25,8 @@ except ImportError:
     _PPTX_AVAILABLE = False
 
 from app.config_manager_callbacks import register_config_manager_callbacks
+from app.batch_profile_callbacks import register_batch_profile_callbacks
+from backend.batch_profile import BatchProfileManager
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -577,8 +579,14 @@ def register_callbacks(app, state, temp_dir: str):
                 return 0
             return len([f for f in os.listdir(folder)
                         if any(f.lower().endswith(e) for e in exts)])
-        nc = _count(cfg_folder,  ['.json'])
         nd = _count(data_folder, ['.csv', '.txt'])
+
+        # Respect the Batch Profile if one exists
+        nc = 0
+        if cfg_folder and os.path.isdir(cfg_folder):
+            _bpm = BatchProfileManager()
+            _bpm.load(cfg_folder)
+            nc = len(_bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True))
         if nc and nd and out_folder:
             return f"{nc} config(s) × {nd} data file(s) = {nc * nd} chart(s) to generate"
         missing = [x for x, cond in [("config folder", not nc),
@@ -608,8 +616,11 @@ def register_callbacks(app, state, temp_dir: str):
         if errs:
             return dbc.Alert(" | ".join(errs), color="warning"), False
 
-        config_files = sorted([os.path.join(cfg_folder,  f)
-                                for f in os.listdir(cfg_folder)  if f.lower().endswith('.json')])
+        # Use the Batch Profile if one has been saved; fall back to
+        # alphabetical order if no profile exists for this folder.
+        _bpm = BatchProfileManager()
+        _bpm.load(cfg_folder)
+        config_files = _bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True)
         data_files   = sorted([os.path.join(data_folder, f)
                                 for f in os.listdir(data_folder) if f.lower().endswith(('.csv', '.txt'))])
         if not config_files:
@@ -805,4 +816,5 @@ def register_callbacks(app, state, temp_dir: str):
         return spans, state.ppt_running, status
 
     # ── Config Manager ────────────────────────────────────────────────────────
+    register_batch_profile_callbacks(app, state)
     register_config_manager_callbacks(app, state)
