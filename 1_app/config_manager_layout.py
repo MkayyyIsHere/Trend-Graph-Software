@@ -619,19 +619,9 @@ def _batch_profile_item(idx: int, filename: str, included: bool) -> dbc.Card:
     return dbc.Card(
         id={"type": "bp-item-card", "index": idx},
         className="mb-1 border-secondary",
-        style={"cursor": "grab"},
         children=[
             dbc.CardBody(
                 dbc.Row([
-                    # Drag handle
-                    dbc.Col(
-                        html.Span("⠿", style={
-                            "fontSize": "18px", "color": "#aaa",
-                            "cursor":   "grab",  "userSelect": "none",
-                            "lineHeight": "1",
-                        }),
-                        width="auto", className="d-flex align-items-center pe-0",
-                    ),
                     # Rank badge
                     dbc.Col(
                         dbc.Badge(
@@ -706,7 +696,7 @@ def _batch_profile_card():
                     color="primary", size="sm", className="me-1",
                 ),
                 dbc.Button(
-                    "↺ Reset to Alpha", id="btn-bp-reset",
+                    "↺ Reset to Default", id="btn-bp-reset",
                     color="secondary", size="sm", outline=True,
                 ),
             ], className="d-flex"), className="ms-auto", width="auto"),
@@ -726,7 +716,7 @@ def _batch_profile_card():
                 ),
             ),
 
-            # Sortable list
+            # Sortable list (▲▼ buttons only — no drag-and-drop)
             html.Div(
                 id="bp-item-list",
                 style={"maxHeight": "360px", "overflowY": "auto"},
@@ -748,8 +738,8 @@ def _batch_profile_card():
             ]),
 
             # Hidden stores
-            dcc.Store(id="store-bp-order",  data=[]),   # list of {filename, included}
-            dcc.Store(id="store-bp-folder", data=""),   # folder that was last loaded
+            dcc.Store(id="store-bp-order",  data=[]),  # list of {filename, included}
+            dcc.Store(id="store-bp-folder", data=""),  # folder that was last loaded
         ]),
     ])
 

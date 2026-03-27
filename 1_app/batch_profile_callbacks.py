@@ -243,7 +243,7 @@ def register_batch_profile_callbacks(app, state):
         order = [{"filename": f, "included": True} for f in all_json]
 
         status = dbc.Alert(
-            "↺ Reset to alphabetical order. Click 💾 Save Profile to persist.",
+            "↺ Reset to default (alphabetical) order. Click 💾 Save Profile to persist.",
             color="info", className="py-1 mb-0",
         )
         return (

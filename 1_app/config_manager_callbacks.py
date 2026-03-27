@@ -274,24 +274,45 @@ def _populate_gantt_form(cfg: dict):
 # ── File list renderer ────────────────────────────────────────────────────────
 
 def _render_file_list(files: list[str], selected: str | None) -> list:
+    from backend.batch_profile import BATCH_PROFILE_FILENAME
     if not files:
         return [html.P("No JSON files found in this folder.",
                        className="text-muted small mb-0")]
     items = []
     for f in files:
-        items.append(
-            dbc.ListGroupItem(
-                html.Div([
-                    html.Span("📄 ", style={"fontSize": "13px"}),
-                    html.Span(f, className="small"),
-                ]),
-                id={"type": "cfgmgr-file-item", "index": f},
-                action=True,
-                active=(f == selected),
-                style={"cursor": "pointer", "padding": "6px 12px"},
-                n_clicks=0,
+        if f == BATCH_PROFILE_FILENAME:
+            # Show as read-only — not selectable, just informational
+            items.append(
+                dbc.ListGroupItem(
+                    html.Div([
+                        html.Span("🔒 ", style={"fontSize": "13px"}),
+                        html.Span(f, className="small text-muted"),
+                        dbc.Badge(
+                            "read-only · managed by Batch Profile",
+                            color="warning", text_color="dark",
+                            className="ms-2",
+                            style={"fontSize": "10px"},
+                        ),
+                    ]),
+                    disabled=True,
+                    style={"padding": "6px 12px", "opacity": "0.65",
+                           "cursor": "not-allowed"},
+                )
             )
-        )
+        else:
+            items.append(
+                dbc.ListGroupItem(
+                    html.Div([
+                        html.Span("📄 ", style={"fontSize": "13px"}),
+                        html.Span(f, className="small"),
+                    ]),
+                    id={"type": "cfgmgr-file-item", "index": f},
+                    action=True,
+                    active=(f == selected),
+                    style={"cursor": "pointer", "padding": "6px 12px"},
+                    n_clicks=0,
+                )
+            )
     return [dbc.ListGroup(items, flush=True)]
 
 
@@ -300,19 +321,14 @@ def _render_file_list(files: list[str], selected: str | None) -> list:
 def register_config_manager_callbacks(app, state):
     """Register all Config Manager callbacks on *1_app*."""
 
-    # ── Browse button → Flask pick endpoint (clientside) ─────────────────
+    # ── Browse button → Flask folder-picker endpoint (clientside) ───────
     app.clientside_callback(
         """
         function(n) {
             if (!n) return window.dash_clientside.no_update;
-            return fetch('/api/pick-file?kind=json&save=false')
+            return fetch('/api/pick-folder?title=Select%20Config%20Folder')
                 .then(r => r.json())
-                .then(d => {
-                    if (!d.path) return window.dash_clientside.no_update;
-                    var p = d.path;
-                    var idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\\\'));
-                    return idx >= 0 ? p.substring(0, idx) : p;
-                })
+                .then(d => d.path || window.dash_clientside.no_update)
                 .catch(() => window.dash_clientside.no_update);
         }
         """,
