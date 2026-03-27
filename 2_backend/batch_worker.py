@@ -15,7 +15,7 @@ from backend.processors import SeriesDataProcessor, EventDataProcessor
 from backend.config import ConfigManager, GanttConfigManager
 from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
-from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE
+from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, DEFAULT_AESTHETICS_PATH, RESERVED_CONFIG_FILENAMES
 
 
 def run_batch(
@@ -31,6 +31,7 @@ def run_batch(
     stop_event:     threading.Event,
     on_done:        Callable,      # called with result dict when finished
     override_chart: dict = None,   # UI-applied chart overrides (dpi, resolution_px, figure_size)
+    aesthetics_path: str = None,   # path to aesthetics.json; falls back to DEFAULT_AESTHETICS_PATH
 ):
     """
     Runs the full batch render in a background thread.
@@ -73,7 +74,7 @@ def run_batch(
         _run_batch_body(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
-            on_done, override_chart, ts, _batch_start,
+            on_done, override_chart, ts, _batch_start, aesthetics_path,
         )
     finally:
         kaleido.stop_sync_server(silence_warnings=True)
@@ -95,6 +96,7 @@ def _run_batch_body(
     override_chart: dict = None,
     ts:             Callable = None,
     _batch_start:   datetime = None,
+    aesthetics_path: str = None,
 ):
     """Inner body of run_batch — called after the kaleido server is live."""
     blog = batch_log.append
@@ -102,6 +104,21 @@ def _run_batch_body(
         ts = lambda: datetime.now().strftime("[%H:%M:%S]")  # noqa: E731
     if _batch_start is None:
         _batch_start = datetime.now()
+    if aesthetics_path is None:
+        aesthetics_path = DEFAULT_AESTHETICS_PATH
+
+    # Guard: filter out reserved files that must never be treated as chart configs.
+    # aesthetics.json and batch_profile.json are infrastructure files, not charts.
+    safe_configs = [
+        p for p in config_files
+        if os.path.basename(p) not in RESERVED_CONFIG_FILENAMES
+    ]
+    skipped = len(config_files) - len(safe_configs)
+    if skipped:
+        skipped_names = [os.path.basename(p) for p in config_files
+                         if os.path.basename(p) in RESERVED_CONFIG_FILENAMES]
+        blog(f"{ts()} ℹ Skipped {skipped} reserved file(s): {', '.join(skipped_names)}")
+    config_files = safe_configs
 
     # Load event/task data ONCE — shared across all workers (read-only)
     event_proc = EventDataProcessor(logger=logger)
@@ -130,7 +147,7 @@ def _run_batch_body(
         cfg_name  = os.path.basename(cfg_path)
         data_name = os.path.basename(data_path)
 
-        cfg = ConfigManager(cfg_path)
+        cfg = ConfigManager(cfg_path, aesthetics_path=aesthetics_path, logger=logger)
         if not cfg.config:
             return out_name, f"SKIPPED (invalid config): {cfg_name}"
 

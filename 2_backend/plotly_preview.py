@@ -156,7 +156,7 @@ def build_plotly_figure(config: ConfigManager,
     # Rows stack downward from (data_max - 3 % gap).
     # X-collision is checked in timestamp seconds (no renderer needed in Plotly).
     #
-    label_fs   = rc.get('legend_fontsize_base', 10) * 0.85
+    label_fs   = rc.get('legend_fontsize_base', 13) * rc.get('font_scale_factor', 1.0)
     # Estimate row height as a fraction of data range (same cap logic as mpl)
     _t         = max(0.0, min(1.0, (data_range - 1.0) / (5000.0 - 1.0)))
     cap_pct    = 0.06 * (1 - _t) + 0.03 * _t
@@ -262,7 +262,8 @@ def build_plotly_figure(config: ConfigManager,
             xref='x', yref='y',
             text=f'<b>{task.display_id}</b>',
             showarrow=False,
-            font=dict(size=label_fs, color=color, family='sans-serif'),
+            font=dict(size=label_fs, color=color,
+                      family=rc.get('legend_font_family', 'sans-serif')),
             xanchor='left', yanchor='bottom',
             bgcolor='rgba(255,255,255,0.85)',
             bordercolor=color,
@@ -271,6 +272,23 @@ def build_plotly_figure(config: ConfigManager,
         )
 
     # ── Layout ────────────────────────────────────────────────────────────────
+    # All aesthetic values come from config (aesthetics.json → per-chart merge).
+    # Nothing is hardcoded here.
+
+    bg_color    = cc.get('background_color', '#ffffff')
+    title_fs    = rc.get('title_fontsize_base', 20) * rc.get('font_scale_factor', 1.0)
+    label_fs_ax = rc.get('axis_label_fontsize_base', 15) * rc.get('font_scale_factor', 1.0)
+    tick_fs     = rc.get('tick_fontsize_base', 12) * rc.get('font_scale_factor', 1.0)
+    font_family = rc.get('legend_font_family', 'sans-serif')
+
+    gc          = config.get_grid_config()
+    grid_alpha  = gc.get('alpha', 0.3)
+    grid_color_hex = gc.get('color', '#505050')
+    # Convert hex+alpha to rgba for plotly
+    _h = grid_color_hex.lstrip('#')
+    _gr, _gg, _gb = int(_h[0:2], 16), int(_h[2:4], 16), int(_h[4:6], 16)
+    grid_rgba   = f'rgba({_gr},{_gg},{_gb},{grid_alpha})'
+
     y_range = None
     if y_min_cfg is not None and y_max_cfg is not None:
         y_range = [float(y_min_cfg), float(y_max_cfg)]
@@ -292,29 +310,38 @@ def build_plotly_figure(config: ConfigManager,
             x_range = [min(all_ts), max(all_ts)]
 
     fig.update_layout(
-        title=dict(text=cc.get('title', 'Data Over Time with Events'),
-                   font=dict(size=18), x=0.5),
+        title=dict(
+            text=cc.get('title', 'Data Over Time with Events'),
+            font=dict(size=title_fs, family=font_family),
+            x=0.5,
+        ),
         xaxis=dict(
-            title=ac.get('x_label', 'Date & Time'),
+            title=dict(text=ac.get('x_label', 'Date & Time'),
+                       font=dict(size=label_fs_ax, family=font_family)),
             range=x_range,
-            autorange=(x_range is None),  # lock range when we have an explicit span
-            showgrid=True, gridcolor='rgba(80,80,80,0.25)',
+            autorange=(x_range is None),
+            showgrid=gc.get('visible', True),
+            gridcolor=grid_rgba,
+            tickfont=dict(size=tick_fs, family=font_family),
             tickformat='%H:%M<br>%b %d',
             showspikes=True, spikemode='across', spikesnap='cursor',
             spikedash='solid', spikecolor='gray', spikethickness=1,
-            showline=True, linecolor='rgba(80,80,80,0.8)', linewidth=1.5,
-            ticks='outside', ticklen=6, tickwidth=1, tickcolor='rgba(80,80,80,0.8)',
-            minor=dict(ticks='outside', ticklen=3, tickwidth=0.7, tickcolor='rgba(80,80,80,0.6)'),
+            showline=True, linecolor=grid_rgba, linewidth=1.5,
+            ticks='outside', ticklen=6, tickwidth=1, tickcolor=grid_rgba,
+            minor=dict(ticks='outside', ticklen=3, tickwidth=0.7,
+                       tickcolor=f'rgba({_gr},{_gg},{_gb},{grid_alpha * 0.7:.2f})'),
         ),
         yaxis=dict(
-            title=ac.get('y_label', 'Value'),
+            title=dict(text=ac.get('y_label', 'Value'),
+                       font=dict(size=label_fs_ax, family=font_family)),
             range=y_range,
-            showgrid=True, gridcolor='rgba(80,80,80,0.25)',
+            showgrid=gc.get('visible', True),
+            gridcolor=grid_rgba,
+            tickfont=dict(size=tick_fs, family=font_family),
         ),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
+        plot_bgcolor=bg_color,
+        paper_bgcolor=bg_color,
         hovermode='x unified',
-        # Legend is rebuilt below as annotations — hide the auto legend
         showlegend=True,
         legend=dict(
             orientation='v',
@@ -323,7 +350,7 @@ def build_plotly_figure(config: ConfigManager,
             bgcolor='rgba(255,255,255,0.9)',
             bordercolor='rgba(0,0,0,0)',
             borderwidth=0,
-            font=dict(size=label_fs),
+            font=dict(size=label_fs, family=font_family),
             title=dict(text=''),
         ),
         margin=dict(l=70, r=320, t=70, b=80),
@@ -337,26 +364,18 @@ def build_plotly_figure(config: ConfigManager,
 
     # ── Right-side legend table (mirrors matplotlib _create_legend) ───────────
     #
-    # We draw it as a paper-referenced annotation block at x=1.02, y=0..1.
-    # Format:
-    #   [color line]  Series Name
-    #   ──────────────────────────
-    #   TestID (bold)    Description
+    # All sizing values come from config (aesthetics.json → per-chart merge).
     #
-    # Because Plotly annotations don't support mixed bold/normal in one block,
-    # we use HTML tags with <b> inside the text string.
-    #
-    wrap_w    = rc.get('legend_wrap_width', 28)
+    wrap_w      = rc.get('legend_wrap_width', 28)
+    legend_w_px = config.get_subplot_params().get('legend_width_px', 500)
     all_configs = config.get_all_series_configs()
 
-    # Build the annotation text
     lines_html = []
 
-    # Series rows: colored line indicator + name
+    # Series rows: colored swatch + name
     for sc in all_configs:
-        sname = sc.get('name', 'Series')
+        sname  = sc.get('name', 'Series')
         scolor = sc.get('line_color', '#1f77b4')
-        # Unicode dash in color acts as swatch
         lines_html.append(
             f'<span style="color:{scolor}">━━</span>  <b>{sname}</b>'
         )
@@ -372,7 +391,6 @@ def build_plotly_figure(config: ConfigManager,
             continue
         seen_ids[key] = True
 
-        # Get color for this test id
         if gantt_config and gantt_config.is_loaded():
             t_color = gantt_config.get_color_for_test_id(task.test_id)
         else:
@@ -380,7 +398,6 @@ def build_plotly_figure(config: ConfigManager,
 
         wrapped_desc = _textwrap.wrap(task.description or '', wrap_w) or ['']
         desc_html    = '<br>'.join(wrapped_desc)
-
         lines_html.append(
             f'<b><span style="color:{t_color}">{task.display_id}</span></b>  {desc_html}'
         )
@@ -394,12 +411,12 @@ def build_plotly_figure(config: ConfigManager,
         text=legend_text,
         showarrow=False,
         align='left',
-        font=dict(size=label_fs, family='monospace', color='#1a1a1a'),
+        font=dict(size=label_fs, family=font_family, color='#1a1a1a'),
         bgcolor='rgba(255,255,255,0.92)',
         bordercolor='rgba(0,0,0,0)',
         borderwidth=0,
         borderpad=8,
-        width=280,
+        width=legend_w_px,
     )
 
     return fig

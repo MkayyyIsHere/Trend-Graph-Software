@@ -12,7 +12,7 @@ from dash import Input, Output, State, dash_table, ctx, html, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, RESOLUTION_PRESETS
+from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, RESOLUTION_PRESETS, RESERVED_CONFIG_FILENAMES
 from backend.processors import SeriesDataProcessor, EventDataProcessor
 from backend.plotly_preview import build_plotly_figure
 from backend.batch_worker import run_batch as _run_batch_worker
@@ -586,7 +586,10 @@ def register_callbacks(app, state, temp_dir: str):
         if cfg_folder and os.path.isdir(cfg_folder):
             _bpm = BatchProfileManager()
             _bpm.load(cfg_folder)
-            nc = len(_bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True))
+            all_paths = _bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True)
+            # Exclude reserved infrastructure files from the chart count
+            nc = len([p for p in all_paths
+                      if os.path.basename(p) not in RESERVED_CONFIG_FILENAMES])
         if nc and nd and out_folder:
             return f"{nc} config(s) × {nd} data file(s) = {nc * nd} chart(s) to generate"
         missing = [x for x, cond in [("config folder", not nc),
@@ -621,6 +624,13 @@ def register_callbacks(app, state, temp_dir: str):
         _bpm = BatchProfileManager()
         _bpm.load(cfg_folder)
         config_files = _bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True)
+
+        # Strip reserved infrastructure files (aesthetics.json, batch_profile.json)
+        # from the work list — the batch worker does this too, but filtering here
+        # ensures the 'total' count and status message are accurate.
+        config_files = [p for p in config_files
+                        if os.path.basename(p) not in RESERVED_CONFIG_FILENAMES]
+
         data_files   = sorted([os.path.join(data_folder, f)
                                 for f in os.listdir(data_folder) if f.lower().endswith(('.csv', '.txt'))])
         if not config_files:
@@ -647,11 +657,18 @@ def register_callbacks(app, state, temp_dir: str):
             k: cc[k] for k in ('dpi', 'resolution_px', 'figure_size') if k in cc
         } or None
 
+        # Resolve aesthetics.json from the config folder so every worker
+        # loads the same master aesthetics alongside each per-chart config.
+        aesthetics_path = os.path.join(cfg_folder, 'aesthetics.json')
+        if not os.path.isfile(aesthetics_path):
+            aesthetics_path = None   # falls back to DEFAULT_AESTHETICS_PATH in worker
+
         threading.Thread(
             target=_run_batch_worker,
             args=(config_files, data_files, event_path, out_folder, total, n_workers,
                   state.logger, state.gantt_config, state.batch_log,
                   state.batch_stop_event, _done, override_chart),
+            kwargs={'aesthetics_path': aesthetics_path},
             daemon=True,
         ).start()
 
@@ -818,3 +835,33 @@ def register_callbacks(app, state, temp_dir: str):
     # ── Config Manager ────────────────────────────────────────────────────────
     register_batch_profile_callbacks(app, state)
     register_config_manager_callbacks(app, state)
+
+    # ── Auto-dismiss status messages ──────────────────────────────────────────
+    # When a status message appears, clear it after 4 seconds by writing ""
+    # back through a proper Dash Output — this keeps Dash's virtual DOM in
+    # sync so repeated saves always re-trigger the indicator correctly.
+    # A hidden dcc.Store per status ID acts as the timer sink.
+    _auto_dismiss_ids = [
+        'bp-status',
+        'aes-save-status',
+        'aes-load-status',
+        'cfgmgr-action-status',
+        'cfgmgr-folder-status',
+        'cfg-save-status',
+    ]
+    for _sid in _auto_dismiss_ids:
+        app.clientside_callback(
+            f"""
+            function(children) {{
+                if (children === null || children === undefined || children === '') {{
+                    return window.dash_clientside.no_update;
+                }}
+                return new Promise(function(resolve) {{
+                    setTimeout(function() {{ resolve(''); }}, 4000);
+                }});
+            }}
+            """,
+            Output(_sid, 'children', allow_duplicate=True),
+            Input(_sid, 'children'),
+            prevent_initial_call=True,
+        )

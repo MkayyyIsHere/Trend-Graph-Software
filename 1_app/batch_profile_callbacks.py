@@ -22,6 +22,7 @@ import dash_bootstrap_components as dbc
 
 from app.config_manager_layout import _batch_profile_item
 from backend.batch_profile import BatchProfileManager, BATCH_PROFILE_FILENAME
+from utils.constants import RESERVED_CONFIG_FILENAMES
 
 
 # ── Module-level manager (one per server process) ─────────────────────────
@@ -195,30 +196,44 @@ def register_batch_profile_callbacks(app, state):
 
     # ── 4. Save Profile button ────────────────────────────────────────────
     @app.callback(
-        Output("bp-status", "children", allow_duplicate=True),
-        Input("btn-bp-save",     "n_clicks"),
-        State("store-bp-order",  "data"),
-        State("store-bp-folder", "data"),
+        Output("bp-status",        "children", allow_duplicate=True),
+        Output("bp-item-list",     "children", allow_duplicate=True),
+        Output("bp-summary-bar",   "children", allow_duplicate=True),
+        Output("bp-order-preview", "children", allow_duplicate=True),
+        Input("btn-bp-save",       "n_clicks"),
+        State("store-bp-order",    "data"),
+        State("store-bp-folder",   "data"),
         prevent_initial_call=True,
     )
     def save_profile(_, order, folder):
         if not folder or not os.path.isdir(folder):
-            return dbc.Alert("❌ No valid folder loaded.", color="danger",
-                             className="py-1 mb-0")
+            return (dbc.Alert("❌ No valid folder loaded.", color="danger",
+                              className="py-1 mb-0"),
+                    no_update, no_update, no_update)
         if not order:
-            return dbc.Alert("❌ No configs to save.", color="warning",
-                             className="py-1 mb-0")
+            return (dbc.Alert("❌ No configs to save.", color="warning",
+                              className="py-1 mb-0"),
+                    no_update, no_update, no_update)
 
         included_names = [r["filename"] for r in order if r["included"]]
         if _bp_manager.save(folder, included_names):
-            n = len(included_names)
-            return dbc.Alert(
+            n      = len(included_names)
+            status = dbc.Alert(
                 f"✓ Profile saved — {n} config(s) in run order "
                 f"({BATCH_PROFILE_FILENAME})",
                 color="success", className="py-1 mb-0",
             )
-        return dbc.Alert("❌ Failed to save profile — check folder permissions.",
-                         color="danger", className="py-1 mb-0")
+            # Re-render the list so the UI reflects exactly what was saved
+            # (excluded items shown greyed out, included items highlighted)
+            return (
+                status,
+                _render_items(order),
+                _summary_bar(order),
+                _order_preview(order),
+            )
+        return (dbc.Alert("❌ Failed to save profile — check folder permissions.",
+                          color="danger", className="py-1 mb-0"),
+                no_update, no_update, no_update)
 
     # ── 5. Reset to alphabetical ──────────────────────────────────────────
     @app.callback(
@@ -235,10 +250,11 @@ def register_batch_profile_callbacks(app, state):
         if not folder or not os.path.isdir(folder):
             raise PreventUpdate
 
-        # Rebuild from scratch — all files included, alpha order
+        # Rebuild from scratch — all non-reserved files included, alpha order
         all_json = sorted(
             f for f in os.listdir(folder)
-            if f.lower().endswith(".json") and f != BATCH_PROFILE_FILENAME
+            if f.lower().endswith(".json")
+            and f not in RESERVED_CONFIG_FILENAMES
         )
         order = [{"filename": f, "included": True} for f in all_json]
 

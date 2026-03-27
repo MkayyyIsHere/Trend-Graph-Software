@@ -27,8 +27,9 @@ LINESTYLES  = ["-", "--", "-.", ":", "None"]
 MARKERS     = ["none", "o", "s", "^", "v", "D", "x", "+", "*"]
 
 # ── Config type constants ────────────────────────────────────────────────────
-CFG_TYPE_SERIES = "series"
-CFG_TYPE_GANTT  = "gantt"
+CFG_TYPE_SERIES     = "series"
+CFG_TYPE_GANTT      = "gantt"
+CFG_TYPE_AESTHETICS = "aesthetics"
 
 
 def _gantt_color_row(idx: int, test_id: str = "", color: str = "#1f77b4") -> dbc.Card:
@@ -289,7 +290,7 @@ def _series_row(idx: int, s: dict = None) -> dbc.Card:
 
 
 def _series_data_sections():
-    """All series/chart/axis/grid/subplot/responsive form elements (for dbc.Collapse)."""
+    """Series/chart/axis form elements for the chart editor modal (slim — aesthetics excluded)."""
     return [
         # ── Series ──────────────────────────────────────────────────────────
         dbc.Row([
@@ -330,34 +331,7 @@ def _series_data_sections():
                 dbc.Label("Title", className="small fw-semibold"),
                 dbc.Input(id="cfg-chart-title",
                           placeholder="e.g. Active Power Over Time", size="sm"),
-            ], width=6),
-            dbc.Col([
-                dbc.Label("Background Colour", className="small fw-semibold"),
-                html.Div([
-                    dbc.Input(id="cfg-bg-color-swatch", type="color", value="#ffffff",
-                              style={"width": "38px", "height": "31px", "padding": "2px",
-                                     "border": "1px solid #ced4da",
-                                     "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
-                    dbc.Input(id="cfg-bg-color-hex", value="#ffffff", size="sm",
-                              style={"borderRadius": "0 4px 4px 0",
-                                     "fontFamily": "monospace", "width": "95px"}),
-                ], className="d-flex"),
-            ], width=3),
-        ], className="mb-2"),
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Width (px)", className="small fw-semibold"),
-                dbc.Input(id="cfg-res-w", value=2560, type="number", min=320, size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Height (px)", className="small fw-semibold"),
-                dbc.Input(id="cfg-res-h", value=1440, type="number", min=240, size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("DPI", className="small fw-semibold"),
-                dbc.Input(id="cfg-dpi", value=96, type="number",
-                          min=72, max=600, size="sm"),
-            ], width=2),
+            ], width=8),
         ], className="mb-3"),
 
         html.Hr(className="my-2"),
@@ -397,127 +371,13 @@ def _series_data_sections():
                 dbc.Input(id="cfg-x-max",
                           placeholder="e.g. 2026-01-25 03:00:00", size="sm"),
             ], width=4),
-        ], className="mb-3"),
-
-        html.Hr(className="my-2"),
-
-        # ── Grid ────────────────────────────────────────────────────────────
-        dbc.Row([dbc.Col(html.H6("🔲 Grid", className="fw-bold text-primary"))]),
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Visible", className="small fw-semibold"),
-                dbc.Select(id="cfg-grid-visible",
-                           options=[{"label": "Yes", "value": "true"},
-                                    {"label": "No",  "value": "false"}],
-                           value="true", size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Axis", className="small fw-semibold"),
-                dbc.Select(id="cfg-grid-axis",
-                           options=[{"label": a, "value": a}
-                                    for a in ["both", "x", "y"]],
-                           value="both", size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Line Style", className="small fw-semibold"),
-                dbc.Select(id="cfg-grid-linestyle",
-                           options=[{"label": ls, "value": ls} for ls in LINESTYLES],
-                           value="-", size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Alpha", className="small fw-semibold"),
-                dbc.Input(id="cfg-grid-alpha", value=0.3, type="number",
-                          min=0.0, max=1.0, step=0.05, size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Width", className="small fw-semibold"),
-                dbc.Input(id="cfg-grid-width", value=1, type="number",
-                          min=0.5, max=5.0, step=0.5, size="sm"),
-            ], width=2),
-            dbc.Col([
-                dbc.Label("Colour", className="small fw-semibold"),
-                html.Div([
-                    dbc.Input(id="cfg-grid-color-swatch", type="color", value="#505050",
-                              style={"width": "38px", "height": "31px", "padding": "2px",
-                                     "border": "1px solid #ced4da",
-                                     "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
-                    dbc.Input(id="cfg-grid-color-hex", value="#505050", size="sm",
-                              style={"borderRadius": "0 4px 4px 0",
-                                     "fontFamily": "monospace", "width": "95px"}),
-                ], className="d-flex"),
-            ], width=2),
-        ], className="mb-3"),
-
-        html.Hr(className="my-2"),
-
-        # ── Subplot Params ──────────────────────────────────────────────────
-        dbc.Row([dbc.Col(html.H6("📦 Subplot Params", className="fw-bold text-primary"))]),
-        dbc.Row([
-            dbc.Col([dbc.Label("Left",   className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-left",   value=0.03, type="number",
-                               min=0.0, max=0.5, step=0.01, size="sm")], width=2),
-            dbc.Col([dbc.Label("Right",  className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-right",  value=0.92, type="number",
-                               min=0.5, max=1.0, step=0.01, size="sm")], width=2),
-            dbc.Col([dbc.Label("Top",    className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-top",    value=0.95, type="number",
-                               min=0.5, max=1.0, step=0.01, size="sm")], width=2),
-            dbc.Col([dbc.Label("Bottom", className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-bottom", value=0.06, type="number",
-                               min=0.0, max=0.5, step=0.01, size="sm")], width=2),
         ], className="mb-2"),
-        dbc.Row([
-            dbc.Col([dbc.Label("Legend X",          className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-lgx",      value=0.92, type="number",
-                               min=0.0, max=1.5, step=0.01, size="sm")], width=2),
-            dbc.Col([dbc.Label("Legend Y",          className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-lgy",      value=0.83, type="number",
-                               min=0.0, max=1.5, step=0.01, size="sm")], width=2),
-            dbc.Col([dbc.Label("Legend Width (px)", className="small fw-semibold"),
-                     dbc.Input(id="cfg-sp-lgw",      value=500, type="number",
-                               min=50, max=2000, step=10, size="sm")], width=3),
-        ], className="mb-3"),
 
-        html.Hr(className="my-2"),
-
-        # ── Responsive ─────────────────────────────────────────────────────
-        dbc.Row([dbc.Col(html.H6("📱 Responsive / Fonts", className="fw-bold text-primary"))]),
-        dbc.Row([
-            dbc.Col([dbc.Label("Font Scale",    className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-font-scale", value=1.0, type="number",
-                               min=0.5, max=3.0, step=0.1, size="sm")], width=2),
-            dbc.Col([dbc.Label("LW Scale",      className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-lw-scale",   value=1.0, type="number",
-                               min=0.5, max=3.0, step=0.1, size="sm")], width=2),
-            dbc.Col([dbc.Label("Title Fontsize", className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-title-fs",   value=20, type="number",
-                               min=6, max=72, size="sm")], width=2),
-            dbc.Col([dbc.Label("Axis Label FS",  className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-axis-fs",    value=15, type="number",
-                               min=6, max=48, size="sm")], width=2),
-            dbc.Col([dbc.Label("Tick FS",        className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-tick-fs",    value=12, type="number",
-                               min=6, max=36, size="sm")], width=2),
-            dbc.Col([dbc.Label("Legend FS",      className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-legend-fs",  value=13, type="number",
-                               min=6, max=36, size="sm")], width=2),
-        ], className="mb-2"),
-        dbc.Row([
-            dbc.Col([dbc.Label("Legend Font Family", className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-legend-ff", value="sans-serif", size="sm")], width=3),
-            dbc.Col([dbc.Label("Pad Top",    className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-pad-top",    value=0.5, type="number",
-                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
-            dbc.Col([dbc.Label("Sep Above",  className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-sep-above",  value=0.4, type="number",
-                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
-            dbc.Col([dbc.Label("Sep Below",  className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-sep-below",  value=0.4, type="number",
-                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
-            dbc.Col([dbc.Label("Gap Slots",  className="small fw-semibold"),
-                     dbc.Input(id="cfg-r-gap-slots",  value=0.5, type="number",
-                               min=0.0, max=5.0, step=0.1, size="sm")], width=2),
-        ], className="mb-2"),
+        html.Small(
+            "💡 Grid, resolution, fonts and legend are shared settings — edit them in the "
+            "Aesthetics panel above.",
+            className="text-muted fst-italic",
+        ),
     ]
 
 
@@ -744,6 +604,171 @@ def _batch_profile_card():
     ])
 
 
+def _aesthetics_card():
+    """Dedicated inline editor card for aesthetics.json — always visible in Config Manager."""
+    return dbc.Card(className="mb-3 border-warning", children=[
+        dbc.CardHeader(dbc.Row([
+            dbc.Col(html.B("🎨 Aesthetics"), width="auto"),
+            dbc.Col(
+                html.Small(
+                    "Shared visual settings for all charts — fonts, resolution, grid, legend. "
+                    "Saved to aesthetics.json in the config folder.",
+                    className="text-muted",
+                ),
+                className="d-flex align-items-center ms-2",
+            ),
+            dbc.Col(
+                dbc.Button("💾 Save aesthetics.json", id="btn-aes-save",
+                           color="warning", size="sm"),
+                className="ms-auto", width="auto",
+            ),
+        ], align="center", justify="between")),
+
+        dbc.CardBody([
+            html.Div(id="aes-load-status", className="mb-2 small"),
+            html.Div(id="aes-save-status", className="mb-2 small"),
+
+            # ── Font ────────────────────────────────────────────────────
+            dbc.Row([dbc.Col(html.H6("🔤 Font", className="fw-bold text-warning"))]),
+            dbc.Row([
+                dbc.Col([dbc.Label("Family", className="small fw-semibold"),
+                         dbc.Input(id="aes-font-family", value="sans-serif", size="sm")], width=3),
+                dbc.Col([dbc.Label("Title Size", className="small fw-semibold"),
+                         dbc.Input(id="aes-title-fs", value=20, type="number",
+                                   min=6, max=72, size="sm")], width=2),
+                dbc.Col([dbc.Label("Axis Label Size", className="small fw-semibold"),
+                         dbc.Input(id="aes-axis-fs", value=15, type="number",
+                                   min=6, max=48, size="sm")], width=2),
+                dbc.Col([dbc.Label("Tick Size", className="small fw-semibold"),
+                         dbc.Input(id="aes-tick-fs", value=12, type="number",
+                                   min=6, max=36, size="sm")], width=2),
+                dbc.Col([dbc.Label("Legend Size", className="small fw-semibold"),
+                         dbc.Input(id="aes-legend-fs", value=13, type="number",
+                                   min=6, max=36, size="sm")], width=2),
+                dbc.Col([dbc.Label("Scale ×", className="small fw-semibold"),
+                         dbc.Input(id="aes-font-scale", value=1.0, type="number",
+                                   min=0.5, max=3.0, step=0.1, size="sm")], width=1),
+            ], className="mb-3"),
+
+            html.Hr(className="my-2"),
+
+            # ── Chart / Export ──────────────────────────────────────────
+            dbc.Row([dbc.Col(html.H6("🖼️ Chart / Export", className="fw-bold text-warning"))]),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Background Colour", className="small fw-semibold"),
+                    html.Div([
+                        dbc.Input(id="aes-bg-color-swatch", type="color", value="#ffffff",
+                                  style={"width": "38px", "height": "31px", "padding": "2px",
+                                         "border": "1px solid #ced4da",
+                                         "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
+                        dbc.Input(id="aes-bg-color-hex", value="#ffffff", size="sm",
+                                  style={"borderRadius": "0 4px 4px 0",
+                                         "fontFamily": "monospace", "width": "95px"}),
+                    ], className="d-flex"),
+                ], width=3),
+                dbc.Col([dbc.Label("Width (px)", className="small fw-semibold"),
+                         dbc.Input(id="aes-res-w", value=2560, type="number",
+                                   min=320, size="sm")], width=2),
+                dbc.Col([dbc.Label("Height (px)", className="small fw-semibold"),
+                         dbc.Input(id="aes-res-h", value=1440, type="number",
+                                   min=240, size="sm")], width=2),
+                dbc.Col([dbc.Label("DPI", className="small fw-semibold"),
+                         dbc.Input(id="aes-dpi", value=96, type="number",
+                                   min=72, max=600, size="sm")], width=2),
+                dbc.Col([dbc.Label("LW Scale ×", className="small fw-semibold"),
+                         dbc.Input(id="aes-lw-scale", value=1.0, type="number",
+                                   min=0.5, max=3.0, step=0.1, size="sm")], width=2),
+            ], className="mb-3"),
+
+            html.Hr(className="my-2"),
+
+            # ── Grid ────────────────────────────────────────────────────
+            dbc.Row([dbc.Col(html.H6("🔲 Grid", className="fw-bold text-warning"))]),
+            dbc.Row([
+                dbc.Col([dbc.Label("Visible", className="small fw-semibold"),
+                         dbc.Select(id="aes-grid-visible",
+                                    options=[{"label": "Yes", "value": "true"},
+                                             {"label": "No",  "value": "false"}],
+                                    value="true", size="sm")], width=2),
+                dbc.Col([dbc.Label("Axis", className="small fw-semibold"),
+                         dbc.Select(id="aes-grid-axis",
+                                    options=[{"label": a, "value": a}
+                                             for a in ["both", "x", "y"]],
+                                    value="both", size="sm")], width=2),
+                dbc.Col([dbc.Label("Line Style", className="small fw-semibold"),
+                         dbc.Select(id="aes-grid-linestyle",
+                                    options=[{"label": ls, "value": ls} for ls in LINESTYLES],
+                                    value="-", size="sm")], width=2),
+                dbc.Col([dbc.Label("Alpha", className="small fw-semibold"),
+                         dbc.Input(id="aes-grid-alpha", value=0.3, type="number",
+                                   min=0.0, max=1.0, step=0.05, size="sm")], width=2),
+                dbc.Col([dbc.Label("Width", className="small fw-semibold"),
+                         dbc.Input(id="aes-grid-width", value=1.0, type="number",
+                                   min=0.5, max=5.0, step=0.5, size="sm")], width=1),
+                dbc.Col([
+                    dbc.Label("Colour", className="small fw-semibold"),
+                    html.Div([
+                        dbc.Input(id="aes-grid-color-swatch", type="color", value="#505050",
+                                  style={"width": "38px", "height": "31px", "padding": "2px",
+                                         "border": "1px solid #ced4da",
+                                         "borderRadius": "4px 0 0 4px", "cursor": "pointer"}),
+                        dbc.Input(id="aes-grid-color-hex", value="#505050", size="sm",
+                                  style={"borderRadius": "0 4px 4px 0",
+                                         "fontFamily": "monospace", "width": "95px"}),
+                    ], className="d-flex"),
+                ], width=3),
+            ], className="mb-3"),
+
+            html.Hr(className="my-2"),
+
+            # ── Legend & Subplot ────────────────────────────────────────
+            dbc.Row([dbc.Col(html.H6("📦 Legend & Subplot", className="fw-bold text-warning"))]),
+            dbc.Row([
+                dbc.Col([dbc.Label("Legend Width (px)", className="small fw-semibold"),
+                         dbc.Input(id="aes-legend-width-px", value=500, type="number",
+                                   min=50, max=2000, step=10, size="sm")], width=2),
+                dbc.Col([dbc.Label("Wrap Width (chars)", className="small fw-semibold"),
+                         dbc.Input(id="aes-legend-wrap-w", value=28, type="number",
+                                   min=10, max=80, size="sm")], width=2),
+                dbc.Col([dbc.Label("Pad Top", className="small fw-semibold"),
+                         dbc.Input(id="aes-pad-top", value=0.5, type="number",
+                                   min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+                dbc.Col([dbc.Label("Sep Above", className="small fw-semibold"),
+                         dbc.Input(id="aes-pad-sep-above", value=0.4, type="number",
+                                   min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+                dbc.Col([dbc.Label("Sep Below", className="small fw-semibold"),
+                         dbc.Input(id="aes-pad-sep-below", value=0.4, type="number",
+                                   min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+                dbc.Col([dbc.Label("Gap Slots", className="small fw-semibold"),
+                         dbc.Input(id="aes-gap-slots", value=0.5, type="number",
+                                   min=0.0, max=5.0, step=0.1, size="sm")], width=2),
+            ], className="mb-2"),
+            dbc.Row([
+                dbc.Col([dbc.Label("Left",     className="small fw-semibold"),
+                         dbc.Input(id="aes-sp-left",   value=0.03, type="number",
+                                   min=0.0, max=0.5, step=0.01, size="sm")], width=2),
+                dbc.Col([dbc.Label("Right",    className="small fw-semibold"),
+                         dbc.Input(id="aes-sp-right",  value=0.92, type="number",
+                                   min=0.5, max=1.0, step=0.01, size="sm")], width=2),
+                dbc.Col([dbc.Label("Top",      className="small fw-semibold"),
+                         dbc.Input(id="aes-sp-top",    value=0.95, type="number",
+                                   min=0.5, max=1.0, step=0.01, size="sm")], width=2),
+                dbc.Col([dbc.Label("Bottom",   className="small fw-semibold"),
+                         dbc.Input(id="aes-sp-bottom", value=0.06, type="number",
+                                   min=0.0, max=0.5, step=0.01, size="sm")], width=2),
+                dbc.Col([dbc.Label("Legend X", className="small fw-semibold"),
+                         dbc.Input(id="aes-sp-lgx",    value=0.92, type="number",
+                                   min=0.0, max=1.5, step=0.01, size="sm")], width=2),
+                dbc.Col([dbc.Label("Legend Y", className="small fw-semibold"),
+                         dbc.Input(id="aes-sp-lgy",    value=0.83, type="number",
+                                   min=0.0, max=1.5, step=0.01, size="sm")], width=2),
+            ], className="mb-2"),
+        ]),
+    ])
+
+
+
 def config_manager_tab():
     """Return the ⚙️ Config Manager dbc.Tab."""
     return dbc.Tab(label="⚙️ Config Manager", tab_id="tab-config-manager", children=[
@@ -777,6 +802,9 @@ def config_manager_tab():
 
             # ── Batch Profile ────────────────────────────────────────────
             _batch_profile_card(),
+
+            # ── Aesthetics ───────────────────────────────────────────────
+            _aesthetics_card(),
 
             # ── File list + action toolbar ───────────────────────────────
             dbc.Card(className="mb-3", children=[

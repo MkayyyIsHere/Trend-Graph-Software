@@ -27,6 +27,8 @@ import json
 import os
 from typing import List
 
+from utils.constants import RESERVED_CONFIG_FILENAMES
+
 BATCH_PROFILE_FILENAME = "batch_profile.json"
 
 
@@ -93,36 +95,36 @@ class BatchProfileManager:
     ) -> List[str]:
         """Return a list of *full paths* for config files in the correct order.
 
-        Files are first filtered to those that actually exist on disk.
-        Any JSON files in the folder that are *not* in the saved profile
-        are appended at the end (alphabetically) — this ensures newly
-        created configs are never silently skipped.
+        Only files explicitly saved in the profile (i.e. included by the user)
+        are returned. Files absent from the saved profile are treated as
+        excluded — they are NOT appended as extras. This ensures that toggling
+        a config off in the UI actually prevents it from running.
+
+        Reserved files (aesthetics.json, batch_profile.json) are always excluded.
 
         If no profile has been loaded and *fallback_alphabetical* is True,
-        all JSON files in the folder are returned in alphabetical order.
+        all non-reserved JSON files in the folder are returned in alphabetical order.
         """
         if not config_folder or not os.path.isdir(config_folder):
             return []
 
         all_json = {
             f for f in os.listdir(config_folder)
-            if f.lower().endswith(".json") and f != BATCH_PROFILE_FILENAME
+            if f.lower().endswith(".json")
+            and f not in RESERVED_CONFIG_FILENAMES
         }
 
         if not self._ordered and fallback_alphabetical:
             return [os.path.join(config_folder, f) for f in sorted(all_json)]
 
-        # Build ordered list — only files that still exist on disk
+        # Return only files that are in the saved profile AND exist on disk.
+        # Files not in the profile were deliberately excluded by the user.
         seen:    set[str]  = set()
         ordered: List[str] = []
         for fname in self._ordered:
             if fname in all_json and fname not in seen:
                 ordered.append(os.path.join(config_folder, fname))
                 seen.add(fname)
-
-        # Append any extras not in the profile (newly added files)
-        for fname in sorted(all_json - seen):
-            ordered.append(os.path.join(config_folder, fname))
 
         return ordered
 
@@ -134,17 +136,19 @@ class BatchProfileManager:
         """Return a merged list of ``{filename, included}`` dicts for the UI.
 
         Files in the saved profile appear first in their saved order,
-        marked as *included*.  Any extra files found on disk that are not
-        in the profile are appended at the end, marked as *excluded*.
+        marked as *included*. Any extra files found on disk that are not
+        in the profile are appended at the end, marked as *excluded* —
+        new files are opt-in, not opt-out.
 
-        This is the primary input for rendering the Batch Profile UI list.
+        Reserved files (aesthetics.json, batch_profile.json) are always hidden.
         """
         if not config_folder or not os.path.isdir(config_folder):
             return []
 
         all_json = sorted(
             f for f in os.listdir(config_folder)
-            if f.lower().endswith(".json") and f != BATCH_PROFILE_FILENAME
+            if f.lower().endswith(".json")
+            and f not in RESERVED_CONFIG_FILENAMES
         )
 
         if not self._ordered:
@@ -158,6 +162,7 @@ class BatchProfileManager:
                 result.append({"filename": fname, "included": True})
                 seen.add(fname)
 
+        # New files not yet in the profile — shown but excluded by default
         for fname in all_json:
             if fname not in seen:
                 result.append({"filename": fname, "included": False})

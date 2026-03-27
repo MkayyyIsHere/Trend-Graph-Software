@@ -168,7 +168,6 @@ class CompositeChartGenerator:
             self.task_colors[task.test_id] = color
             fc    = color + '40' if not task.is_normalization else '#80808040'
             ec    = color        if not task.is_normalization else '#808080'
-            ec = color if not task.is_normalization else '#808080'
             self.ax.axvspan(task.start_time, task.end_time,
                             facecolor='none', edgecolor=ec,
                             linewidth=edge_width, zorder=1)
@@ -312,7 +311,11 @@ class CompositeChartGenerator:
 
         legend_width_px = sp.get('legend_width_px', None)
         if legend_width_px is not None:
-            fig_w_px = cc.get('figure_size', DEFAULT_FIGURE_SIZE)[0] * cc.get('dpi', DEFAULT_DPI)
+            res = cc.get('resolution_px')
+            if res:
+                fig_w_px = res[0]
+            else:
+                fig_w_px = cc.get('figure_size', DEFAULT_FIGURE_SIZE)[0] * cc.get('dpi', DEFAULT_DPI)
             derived  = max(0.0, min(0.99, (fig_w_px - legend_width_px) / fig_w_px))
             self.config.config.setdefault('subplot_params', {})['right']    = derived
             self.config.config['subplot_params']['legend_x'] = derived
@@ -412,9 +415,12 @@ class CompositeChartGenerator:
 
     def _save_chart(self, output_path: str):
         try:
+            cc = self.config.get_chart_config()
             self.fig.savefig(output_path,
-                             dpi=self.config.get_chart_config().get('dpi', DEFAULT_DPI),
-                             bbox_inches=None, facecolor='white', edgecolor='none', pad_inches=0)
+                             dpi=cc.get('dpi', DEFAULT_DPI),
+                             bbox_inches=None,
+                             facecolor=cc.get('background_color', '#ffffff'),
+                             edgecolor='none', pad_inches=0)
             self._log(f"Chart saved to: {output_path}")
         except Exception as e:
             self._log(f"Failed to save chart: {e}", 'ERROR')
@@ -422,9 +428,12 @@ class CompositeChartGenerator:
     def to_png_bytes(self) -> bytes:
         """Return the current figure as PNG bytes (for browser display)."""
         buf = io.BytesIO()
+        cc = self.config.get_chart_config()
         self.fig.savefig(buf, format='png',
-                         dpi=self.config.get_chart_config().get('dpi', DEFAULT_DPI),
-                         bbox_inches=None, facecolor='white', edgecolor='none', pad_inches=0)
+                         dpi=cc.get('dpi', DEFAULT_DPI),
+                         bbox_inches=None,
+                         facecolor=cc.get('background_color', '#ffffff'),
+                         edgecolor='none', pad_inches=0)
         buf.seek(0)
         return buf.read()
 

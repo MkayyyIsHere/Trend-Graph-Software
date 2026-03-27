@@ -9,18 +9,27 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
 from app.config_manager_layout import (
-    COLOUR_PALETTES, CFG_TYPE_SERIES, CFG_TYPE_GANTT,
+    COLOUR_PALETTES, CFG_TYPE_SERIES, CFG_TYPE_GANTT, CFG_TYPE_AESTHETICS,
     _series_row, _gantt_color_row, _palette_color_row,
 )
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+# Filenames that are never shown in the chart file list
+_AESTHETICS_FILENAME   = 'aesthetics.json'
+_BATCH_PROFILE_FILENAME = 'batch_profile.json'
+_RESERVED = {_AESTHETICS_FILENAME, _BATCH_PROFILE_FILENAME}
+
+
 def _list_json_files(folder: str) -> list[str]:
-    """Return sorted list of .json filenames in *folder*."""
+    """Return sorted list of chart .json filenames in *folder* (reserved files excluded)."""
     if not folder or not os.path.isdir(folder):
         return []
-    return sorted(f for f in os.listdir(folder) if f.lower().endswith(".json"))
+    return sorted(
+        f for f in os.listdir(folder)
+        if f.lower().endswith(".json") and f not in _RESERVED
+    )
 
 
 def _safe_float(v, default=None):
@@ -49,13 +58,14 @@ def _build_config_from_form(
     filename, description, usage,
     series_names, series_vcols, series_kws, series_alphas,
     series_color_hexes, series_linewidths, series_linestyles, series_markers,
-    chart_title, bg_hex, res_w, res_h, dpi,
+    chart_title,
     x_label, y_label, y_min, y_max, x_min, x_max,
-    grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
-    sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy, sp_lgw,
-    r_font_scale, r_lw_scale, r_title_fs, r_axis_fs, r_tick_fs, r_legend_fs,
-    r_legend_ff, r_pad_top, r_sep_above, r_sep_below, r_gap_slots,
 ) -> dict:
+    """
+    Build a slim per-chart config dict.
+    Only unique-per-chart fields are written (series, title, axis).
+    Aesthetic fields (fonts, grid, resolution, background) live in aesthetics.json.
+    """
     n_series = len(series_names) if series_names else 0
     series = []
     for i in range(n_series):
@@ -77,44 +87,11 @@ def _build_config_from_form(
         "_usage":       usage or "",
         "series": series,
         "chart": {
-            "title":            chart_title or "",
-            "resolution_px":    [_safe_int(res_w, 2560), _safe_int(res_h, 1440)],
-            "dpi":              _safe_int(dpi, 96),
-            "background_color": _parse_color(bg_hex, "#ffffff"),
+            "title": chart_title or "",
         },
         "axis": {
             "x_label": x_label or "",
             "y_label": y_label or "",
-        },
-        "grid": {
-            "visible":   grid_visible == "true",
-            "axis":      grid_axis or "both",
-            "linestyle": grid_ls or "-",
-            "alpha":     _safe_float(grid_alpha, 0.3),
-            "color":     _parse_color(grid_color_hex, "#505050"),
-            "gridwidth": _safe_float(grid_width, 1),
-        },
-        "subplot_params": {
-            "left":            _safe_float(sp_left,   0.03),
-            "right":           _safe_float(sp_right,  0.92),
-            "top":             _safe_float(sp_top,    0.95),
-            "bottom":          _safe_float(sp_bottom, 0.06),
-            "legend_x":        _safe_float(sp_lgx,    0.92),
-            "legend_y":        _safe_float(sp_lgy,    0.83),
-            "legend_width_px": _safe_int(sp_lgw,      500),
-        },
-        "responsive": {
-            "font_scale_factor":        _safe_float(r_font_scale, 1.0),
-            "linewidth_scale_factor":   _safe_float(r_lw_scale,   1.0),
-            "title_fontsize_base":      _safe_int(r_title_fs,     20),
-            "axis_label_fontsize_base": _safe_int(r_axis_fs,      15),
-            "tick_fontsize_base":       _safe_int(r_tick_fs,      12),
-            "legend_fontsize_base":     _safe_int(r_legend_fs,    13),
-            "legend_font_family":       r_legend_ff or "sans-serif",
-            "legend_pad_top":           _safe_float(r_pad_top,    0.5),
-            "legend_pad_sep_above":     _safe_float(r_sep_above,  0.4),
-            "legend_pad_sep_below":     _safe_float(r_sep_below,  0.4),
-            "legend_gap_slots":         _safe_float(r_gap_slots,  0.5),
         },
     }
 
@@ -126,6 +103,61 @@ def _build_config_from_form(
     return cfg
 
 
+def _build_aesthetics_from_form(
+    font_family, title_fs, axis_fs, tick_fs, legend_fs, font_scale,
+    bg_color_hex,
+    res_w, res_h, dpi,
+    grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
+    sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
+    legend_width_px, legend_wrap_w,
+    pad_top, pad_sep_above, pad_sep_below, gap_slots,
+    lw_scale,
+) -> dict:
+    """Build the aesthetics.json dict from the aesthetics editor form."""
+    return {
+        "_description": "Master aesthetics config — single source of truth for all visual settings.",
+        "_usage": "Loaded automatically before any per-chart config. Per-chart JSONs may override fields here, but a WARNING will be logged.",
+        "font": {
+            "family":          font_family or "sans-serif",
+            "title_size":      _safe_int(title_fs,  20),
+            "axis_label_size": _safe_int(axis_fs,   15),
+            "tick_size":       _safe_int(tick_fs,   12),
+            "legend_size":     _safe_int(legend_fs, 13),
+            "scale_factor":    _safe_float(font_scale, 1.0),
+        },
+        "legend": {
+            "width_px":      _safe_int(legend_width_px, 500),
+            "wrap_width":    _safe_int(legend_wrap_w, 28),
+            "pad_top":       _safe_float(pad_top,       0.5),
+            "pad_sep_above": _safe_float(pad_sep_above, 0.4),
+            "pad_sep_below": _safe_float(pad_sep_below, 0.4),
+            "gap_slots":     _safe_float(gap_slots,     0.5),
+        },
+        "chart": {
+            "background_color": _parse_color(bg_color_hex, "#ffffff"),
+            "resolution_px":    [_safe_int(res_w, 2560), _safe_int(res_h, 1440)],
+            "dpi":              _safe_int(dpi, 96),
+        },
+        "grid": {
+            "visible":   grid_visible == "true",
+            "axis":      grid_axis or "both",
+            "linestyle": grid_ls or "-",
+            "alpha":     _safe_float(grid_alpha, 0.3),
+            "color":     _parse_color(grid_color_hex, "#505050"),
+            "gridwidth": _safe_float(grid_width, 1),
+        },
+        "subplot_params": {
+            "left":   _safe_float(sp_left,   0.03),
+            "right":  _safe_float(sp_right,  0.92),
+            "top":    _safe_float(sp_top,    0.95),
+            "bottom": _safe_float(sp_bottom, 0.06),
+            "legend_x": _safe_float(sp_lgx,  0.92),
+            "legend_y": _safe_float(sp_lgy,  0.83),
+        },
+        "linewidth_scale_factor": _safe_float(lw_scale, 1.0),
+    }
+
+
 def _populate_form_from_config(cfg: dict):
     series_list = cfg.get("series", [])
     if not isinstance(series_list, list):
@@ -134,49 +166,17 @@ def _populate_form_from_config(cfg: dict):
     rows  = [_series_row(i, s) for i, s in enumerate(series_list)]
     chart = cfg.get("chart", {})
     axis  = cfg.get("axis",  {})
-    grid  = cfg.get("grid",  {})
-    sp    = cfg.get("subplot_params", {})
-    resp  = cfg.get("responsive", {})
-    res   = chart.get("resolution_px", [2560, 1440])
 
     return rows, len(series_list), {
         "description":  cfg.get("_description", ""),
         "usage":        cfg.get("_usage", ""),
         "chart_title":  chart.get("title", ""),
-        "bg_hex":       chart.get("background_color", "#ffffff"),
-        "res_w":        res[0] if len(res) > 0 else 2560,
-        "res_h":        res[1] if len(res) > 1 else 1440,
-        "dpi":          chart.get("dpi", 96),
         "x_label":      axis.get("x_label", ""),
         "y_label":      axis.get("y_label", ""),
         "y_min":        axis.get("y_min", ""),
         "y_max":        axis.get("y_max", ""),
         "x_min":        axis.get("x_min", ""),
         "x_max":        axis.get("x_max", ""),
-        "grid_visible": "true" if grid.get("visible", True) else "false",
-        "grid_axis":    grid.get("axis", "both"),
-        "grid_ls":      grid.get("linestyle", "-"),
-        "grid_alpha":   grid.get("alpha", 0.3),
-        "grid_width":   grid.get("gridwidth", 1),
-        "grid_color":   grid.get("color", "#505050"),
-        "sp_left":      sp.get("left",   0.03),
-        "sp_right":     sp.get("right",  0.92),
-        "sp_top":       sp.get("top",    0.95),
-        "sp_bottom":    sp.get("bottom", 0.06),
-        "sp_lgx":       sp.get("legend_x", 0.92),
-        "sp_lgy":       sp.get("legend_y", 0.83),
-        "sp_lgw":       sp.get("legend_width_px", 500),
-        "r_font_scale": resp.get("font_scale_factor", 1.0),
-        "r_lw_scale":   resp.get("linewidth_scale_factor", 1.0),
-        "r_title_fs":   resp.get("title_fontsize_base", 20),
-        "r_axis_fs":    resp.get("axis_label_fontsize_base", 15),
-        "r_tick_fs":    resp.get("tick_fontsize_base", 12),
-        "r_legend_fs":  resp.get("legend_fontsize_base", 13),
-        "r_legend_ff":  resp.get("legend_font_family", "sans-serif"),
-        "r_pad_top":    resp.get("legend_pad_top", 0.5),
-        "r_sep_above":  resp.get("legend_pad_sep_above", 0.4),
-        "r_sep_below":  resp.get("legend_pad_sep_below", 0.4),
-        "r_gap_slots":  resp.get("legend_gap_slots", 0.5),
     }
 
 
@@ -422,7 +422,6 @@ def register_config_manager_callbacks(app, state):
     def highlight_selected(selected, ids):
         return [item["index"] == selected for item in ids]
 
-    # ── Open editor: New / Edit / Clone ──────────────────────────────────
     @app.callback(
         Output("cfg-editor-modal",             "is_open",  allow_duplicate=True),
         Output("cfg-editor-title",             "children"),
@@ -434,42 +433,12 @@ def register_config_manager_callbacks(app, state):
         Output("cfg-series-container",         "children"),
         Output("store-series-count",           "data"),
         Output("cfg-chart-title",              "value"),
-        Output("cfg-bg-color-swatch",          "value"),
-        Output("cfg-bg-color-hex",             "value"),
-        Output("cfg-res-w",                    "value"),
-        Output("cfg-res-h",                    "value"),
-        Output("cfg-dpi",                      "value"),
         Output("cfg-x-label",                  "value"),
         Output("cfg-y-label",                  "value"),
         Output("cfg-y-min",                    "value"),
         Output("cfg-y-max",                    "value"),
         Output("cfg-x-min",                    "value"),
         Output("cfg-x-max",                    "value"),
-        Output("cfg-grid-visible",             "value"),
-        Output("cfg-grid-axis",               "value"),
-        Output("cfg-grid-linestyle",           "value"),
-        Output("cfg-grid-alpha",               "value"),
-        Output("cfg-grid-width",               "value"),
-        Output("cfg-grid-color-swatch",        "value"),
-        Output("cfg-grid-color-hex",           "value"),
-        Output("cfg-sp-left",                  "value"),
-        Output("cfg-sp-right",                 "value"),
-        Output("cfg-sp-top",                   "value"),
-        Output("cfg-sp-bottom",                "value"),
-        Output("cfg-sp-lgx",                   "value"),
-        Output("cfg-sp-lgy",                   "value"),
-        Output("cfg-sp-lgw",                   "value"),
-        Output("cfg-r-font-scale",             "value"),
-        Output("cfg-r-lw-scale",               "value"),
-        Output("cfg-r-title-fs",               "value"),
-        Output("cfg-r-axis-fs",                "value"),
-        Output("cfg-r-tick-fs",                "value"),
-        Output("cfg-r-legend-fs",              "value"),
-        Output("cfg-r-legend-ff",              "value"),
-        Output("cfg-r-pad-top",                "value"),
-        Output("cfg-r-sep-above",              "value"),
-        Output("cfg-r-sep-below",              "value"),
-        Output("cfg-r-gap-slots",              "value"),
         # Gantt section
         Output("cfg-gantt-bar-alpha",          "value"),
         Output("cfg-gantt-bar-height",         "value"),
@@ -498,17 +467,9 @@ def register_config_manager_callbacks(app, state):
 
         SERIES_DEFAULTS = (
             [_series_row(0)], 1,
-            "", "#ffffff", "#ffffff",
-            2560, 1440, 96,
-            "", "",
-            "", "", "", "",
-            "true", "both", "-",
-            0.3, 1, "#505050", "#505050",
-            0.03, 0.92, 0.95, 0.06,
-            0.92, 0.83, 500,
-            1.0, 1.0, 20, 15, 12, 13,
-            "sans-serif",
-            0.5, 0.4, 0.4, 0.5,
+            "",       # chart_title
+            "", "",   # x_label, y_label
+            "", "", "", "",  # y_min, y_max, x_min, x_max
         )
         GANTT_DEFAULTS = (
             0.3, 1.0, "#000000", "#000000", 0.2,
@@ -579,19 +540,8 @@ def register_config_manager_callbacks(app, state):
             fname, fv["description"], fv["usage"],
             rows, n_series,
             fv["chart_title"],
-            fv["bg_hex"], fv["bg_hex"],
-            fv["res_w"], fv["res_h"], fv["dpi"],
             fv["x_label"], fv["y_label"],
             fv["y_min"], fv["y_max"], fv["x_min"], fv["x_max"],
-            fv["grid_visible"], fv["grid_axis"], fv["grid_ls"],
-            fv["grid_alpha"], fv["grid_width"],
-            fv["grid_color"], fv["grid_color"],
-            fv["sp_left"], fv["sp_right"], fv["sp_top"], fv["sp_bottom"],
-            fv["sp_lgx"], fv["sp_lgy"], fv["sp_lgw"],
-            fv["r_font_scale"], fv["r_lw_scale"],
-            fv["r_title_fs"], fv["r_axis_fs"], fv["r_tick_fs"], fv["r_legend_fs"],
-            fv["r_legend_ff"],
-            fv["r_pad_top"], fv["r_sep_above"], fv["r_sep_below"], fv["r_gap_slots"],
             # Gantt section — blank/defaults (will be collapsed)
             *GANTT_DEFAULTS,
             # Collapse states: series open, gantt closed
@@ -808,7 +758,7 @@ def register_config_manager_callbacks(app, state):
     def close_editor(_):
         return False
 
-    # ── Save ──────────────────────────────────────────────────────────────
+    # ── Save chart config (slim) ──────────────────────────────────────────
     @app.callback(
         Output("cfg-save-status",       "children",  allow_duplicate=True),
         Output("cfg-editor-modal",      "is_open",   allow_duplicate=True),
@@ -831,41 +781,15 @@ def register_config_manager_callbacks(app, state):
         State({"type": "series-linewidth",  "index": ALL}, "value"),
         State({"type": "series-linestyle",  "index": ALL}, "value"),
         State({"type": "series-marker",     "index": ALL}, "value"),
-        State("cfg-chart-title",    "value"),
-        State("cfg-bg-color-hex",   "value"),
-        State("cfg-res-w",          "value"),
-        State("cfg-res-h",          "value"),
-        State("cfg-dpi",            "value"),
-        State("cfg-x-label",        "value"),
-        State("cfg-y-label",        "value"),
-        State("cfg-y-min",          "value"),
-        State("cfg-y-max",          "value"),
-        State("cfg-x-min",          "value"),
-        State("cfg-x-max",          "value"),
-        State("cfg-grid-visible",   "value"),
-        State("cfg-grid-axis",      "value"),
-        State("cfg-grid-linestyle", "value"),
-        State("cfg-grid-alpha",     "value"),
-        State("cfg-grid-width",     "value"),
-        State("cfg-grid-color-hex", "value"),
-        State("cfg-sp-left",        "value"),
-        State("cfg-sp-right",       "value"),
-        State("cfg-sp-top",         "value"),
-        State("cfg-sp-bottom",      "value"),
-        State("cfg-sp-lgx",         "value"),
-        State("cfg-sp-lgy",         "value"),
-        State("cfg-sp-lgw",         "value"),
-        State("cfg-r-font-scale",   "value"),
-        State("cfg-r-lw-scale",     "value"),
-        State("cfg-r-title-fs",     "value"),
-        State("cfg-r-axis-fs",      "value"),
-        State("cfg-r-tick-fs",      "value"),
-        State("cfg-r-legend-fs",    "value"),
-        State("cfg-r-legend-ff",    "value"),
-        State("cfg-r-pad-top",      "value"),
-        State("cfg-r-sep-above",    "value"),
-        State("cfg-r-sep-below",    "value"),
-        State("cfg-r-gap-slots",    "value"),
+        # Chart (title only — aesthetics live in aesthetics.json)
+        State("cfg-chart-title", "value"),
+        # Axis
+        State("cfg-x-label", "value"),
+        State("cfg-y-label", "value"),
+        State("cfg-y-min",   "value"),
+        State("cfg-y-max",   "value"),
+        State("cfg-x-min",   "value"),
+        State("cfg-x-max",   "value"),
         # Gantt states
         State("cfg-gantt-bar-alpha",  "value"),
         State("cfg-gantt-bar-height", "value"),
@@ -881,12 +805,8 @@ def register_config_manager_callbacks(app, state):
         description, usage,
         series_names, series_vcols, series_kws, series_alphas,
         series_color_hexes, series_linewidths, series_linestyles, series_markers,
-        chart_title, bg_hex, res_w, res_h, dpi,
+        chart_title,
         x_label, y_label, y_min, y_max, x_min, x_max,
-        grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
-        sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy, sp_lgw,
-        r_font_scale, r_lw_scale, r_title_fs, r_axis_fs, r_tick_fs, r_legend_fs,
-        r_legend_ff, r_pad_top, r_sep_above, r_sep_below, r_gap_slots,
         gantt_bar_alpha, gantt_bar_height, gantt_edge_hex, gantt_edge_width,
         gantt_test_ids, gantt_color_hexes, gantt_palette_hexes,
     ):
@@ -903,15 +823,19 @@ def register_config_manager_callbacks(app, state):
         fname = filename.strip()
         if not fname.lower().endswith(".json"):
             fname += ".json"
-        fname    = re.sub(r'[<>:"/\\|?*]', "_", fname)
+        fname = re.sub(r'[<>:"/\\|?*]', "_", fname)
+
+        # Prevent accidentally saving over reserved files
+        if fname in _RESERVED:
+            return ERR(f"❌ '{fname}' is a reserved filename. Use the dedicated editor for it.")
+
         out_path = os.path.join(folder.strip(), fname)
 
         if cfg_type == CFG_TYPE_GANTT:
             cfg = _build_gantt_from_form(
                 fname, description, usage,
                 gantt_bar_alpha, gantt_bar_height, gantt_edge_hex, gantt_edge_width,
-                gantt_test_ids, gantt_color_hexes,
-                gantt_palette_hexes,
+                gantt_test_ids, gantt_color_hexes, gantt_palette_hexes,
             )
             n_ids   = len([k for k in cfg.get("gantt_colors", {})
                            if not k.startswith("_") and k != "default_palette"])
@@ -921,12 +845,8 @@ def register_config_manager_callbacks(app, state):
                 fname, description, usage,
                 series_names, series_vcols, series_kws, series_alphas,
                 series_color_hexes, series_linewidths, series_linestyles, series_markers,
-                chart_title, bg_hex, res_w, res_h, dpi,
+                chart_title,
                 x_label, y_label, y_min, y_max, x_min, x_max,
-                grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
-                sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy, sp_lgw,
-                r_font_scale, r_lw_scale, r_title_fs, r_axis_fs, r_tick_fs, r_legend_fs,
-                r_legend_ff, r_pad_top, r_sep_above, r_sep_below, r_gap_slots,
             )
             summary = f"✓ Saved: {fname}  ({len(cfg.get('series', []))} series)"
 
@@ -940,6 +860,194 @@ def register_config_manager_callbacks(app, state):
         file_list = _render_file_list(files, fname)
         action    = dbc.Alert(summary, color="success", className="py-1 mb-0")
         return "", False, file_list, action, fname
+
+    # ── Save aesthetics ───────────────────────────────────────────────────
+    @app.callback(
+        Output("aes-save-status", "children"),
+        Input("btn-aes-save",     "n_clicks"),
+        State("cfgmgr-folder-path",   "value"),
+        State("aes-font-family",      "value"),
+        State("aes-title-fs",         "value"),
+        State("aes-axis-fs",          "value"),
+        State("aes-tick-fs",          "value"),
+        State("aes-legend-fs",        "value"),
+        State("aes-font-scale",       "value"),
+        State("aes-bg-color-hex",     "value"),
+        State("aes-res-w",            "value"),
+        State("aes-res-h",            "value"),
+        State("aes-dpi",              "value"),
+        State("aes-grid-visible",     "value"),
+        State("aes-grid-axis",        "value"),
+        State("aes-grid-linestyle",   "value"),
+        State("aes-grid-alpha",       "value"),
+        State("aes-grid-width",       "value"),
+        State("aes-grid-color-hex",   "value"),
+        State("aes-sp-left",          "value"),
+        State("aes-sp-right",         "value"),
+        State("aes-sp-top",           "value"),
+        State("aes-sp-bottom",        "value"),
+        State("aes-sp-lgx",           "value"),
+        State("aes-sp-lgy",           "value"),
+        State("aes-legend-width-px",  "value"),
+        State("aes-legend-wrap-w",    "value"),
+        State("aes-pad-top",          "value"),
+        State("aes-pad-sep-above",    "value"),
+        State("aes-pad-sep-below",    "value"),
+        State("aes-gap-slots",        "value"),
+        State("aes-lw-scale",         "value"),
+        prevent_initial_call=True,
+    )
+    def save_aesthetics(
+        _, folder,
+        font_family, title_fs, axis_fs, tick_fs, legend_fs, font_scale,
+        bg_color_hex, res_w, res_h, dpi,
+        grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
+        sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
+        legend_width_px, legend_wrap_w,
+        pad_top, pad_sep_above, pad_sep_below, gap_slots,
+        lw_scale,
+    ):
+        if not folder or not os.path.isdir(folder.strip()):
+            return dbc.Alert("❌ No valid folder loaded.", color="danger", className="py-1 mb-0")
+
+        cfg = _build_aesthetics_from_form(
+            font_family, title_fs, axis_fs, tick_fs, legend_fs, font_scale,
+            bg_color_hex, res_w, res_h, dpi,
+            grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
+            sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
+            legend_width_px, legend_wrap_w,
+            pad_top, pad_sep_above, pad_sep_below, gap_slots,
+            lw_scale,
+        )
+        out_path = os.path.join(folder.strip(), _AESTHETICS_FILENAME)
+        try:
+            with open(out_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2, ensure_ascii=False)
+            return dbc.Alert(f"✓ Saved aesthetics.json → {out_path}",
+                             color="success", className="py-1 mb-0")
+        except Exception as e:
+            return dbc.Alert(f"❌ Error saving aesthetics: {e}",
+                             color="danger", className="py-1 mb-0")
+
+    # ── Load aesthetics into editor when folder changes ───────────────────
+    @app.callback(
+        Output("aes-font-family",    "value"),
+        Output("aes-title-fs",       "value"),
+        Output("aes-axis-fs",        "value"),
+        Output("aes-tick-fs",        "value"),
+        Output("aes-legend-fs",      "value"),
+        Output("aes-font-scale",     "value"),
+        Output("aes-bg-color-swatch","value"),
+        Output("aes-bg-color-hex",   "value"),
+        Output("aes-res-w",          "value"),
+        Output("aes-res-h",          "value"),
+        Output("aes-dpi",            "value"),
+        Output("aes-grid-visible",   "value"),
+        Output("aes-grid-axis",      "value"),
+        Output("aes-grid-linestyle", "value"),
+        Output("aes-grid-alpha",     "value"),
+        Output("aes-grid-width",     "value"),
+        Output("aes-grid-color-swatch","value"),
+        Output("aes-grid-color-hex", "value"),
+        Output("aes-sp-left",        "value"),
+        Output("aes-sp-right",       "value"),
+        Output("aes-sp-top",         "value"),
+        Output("aes-sp-bottom",      "value"),
+        Output("aes-sp-lgx",         "value"),
+        Output("aes-sp-lgy",         "value"),
+        Output("aes-legend-width-px","value"),
+        Output("aes-legend-wrap-w",  "value"),
+        Output("aes-pad-top",        "value"),
+        Output("aes-pad-sep-above",  "value"),
+        Output("aes-pad-sep-below",  "value"),
+        Output("aes-gap-slots",      "value"),
+        Output("aes-lw-scale",       "value"),
+        Output("aes-load-status",    "children"),
+        Input("btn-cfgmgr-refresh",  "n_clicks"),
+        Input("cfgmgr-folder-path",  "value"),
+        prevent_initial_call=True,
+    )
+    def load_aesthetics(_, folder):
+        DEFAULTS = (
+            "sans-serif", 20, 15, 12, 13, 1.0,
+            "#ffffff", "#ffffff", 2560, 1440, 96,
+            "true", "both", "-", 0.3, 1.0, "#505050", "#505050",
+            0.03, 0.92, 0.95, 0.06, 0.92, 0.83,
+            500, 28, 0.5, 0.4, 0.4, 0.5, 1.0,
+            html.Small("Using built-in defaults (aesthetics.json not found).",
+                       className="text-muted"),
+        )
+        if not folder or not os.path.isdir(folder.strip()):
+            return DEFAULTS
+
+        aes_path = os.path.join(folder.strip(), _AESTHETICS_FILENAME)
+        if not os.path.exists(aes_path):
+            return DEFAULTS
+
+        try:
+            with open(aes_path, encoding="utf-8") as f:
+                a = json.load(f)
+        except Exception as e:
+            return (*DEFAULTS[:-1],
+                    dbc.Alert(f"❌ Error loading aesthetics.json: {e}",
+                              color="danger", className="py-1 mb-0"))
+
+        font  = a.get("font", {})
+        chart = a.get("chart", {})
+        grid  = a.get("grid", {})
+        sp    = a.get("subplot_params", {})
+        leg   = a.get("legend", {})
+        res   = chart.get("resolution_px", [2560, 1440])
+        bg    = chart.get("background_color", "#ffffff")
+        gc    = grid.get("color", "#505050")
+
+        return (
+            font.get("family", "sans-serif"),
+            font.get("title_size", 20),
+            font.get("axis_label_size", 15),
+            font.get("tick_size", 12),
+            font.get("legend_size", 13),
+            font.get("scale_factor", 1.0),
+            bg, bg,
+            res[0] if res else 2560, res[1] if len(res) > 1 else 1440,
+            chart.get("dpi", 96),
+            "true" if grid.get("visible", True) else "false",
+            grid.get("axis", "both"),
+            grid.get("linestyle", "-"),
+            grid.get("alpha", 0.3),
+            grid.get("gridwidth", 1.0),
+            gc, gc,
+            sp.get("left", 0.03), sp.get("right", 0.92),
+            sp.get("top", 0.95),  sp.get("bottom", 0.06),
+            sp.get("legend_x", 0.92), sp.get("legend_y", 0.83),
+            leg.get("width_px", 500), leg.get("wrap_width", 28),
+            leg.get("pad_top", 0.5), leg.get("pad_sep_above", 0.4),
+            leg.get("pad_sep_below", 0.4), leg.get("gap_slots", 0.5),
+            a.get("linewidth_scale_factor", 1.0),
+            dbc.Alert("✓ Loaded aesthetics.json", color="success", className="py-1 mb-0"),
+        )
+
+    # Swatch ↔ hex sync for aesthetics bg and grid colour
+    for swatch_id, hex_id in [
+        ("aes-bg-color-swatch",   "aes-bg-color-hex"),
+        ("aes-grid-color-swatch", "aes-grid-color-hex"),
+    ]:
+        app.clientside_callback(
+            "function(v) { return v; }",
+            Output(hex_id,    "value", allow_duplicate=True),
+            Input( swatch_id, "value"),
+            prevent_initial_call=True,
+        )
+        app.clientside_callback(
+            """function(v) {
+                if (!v) return window.dash_clientside.no_update;
+                v = v.trim();
+                return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
+            }""",
+            Output(swatch_id, "value", allow_duplicate=True),
+            Input( hex_id,    "value"),
+            prevent_initial_call=True,
+        )
 
     # ── Delete — open confirm ─────────────────────────────────────────────
     @app.callback(
