@@ -189,7 +189,14 @@ def _preview_tab():
             dbc.Card(className="mb-3", children=[
                 dbc.CardHeader(
                     dbc.Row([
-                        dbc.Col(html.B("Interactive Chart Preview"), width="auto"),
+                        dbc.Col([
+                            html.B("Interactive Chart Preview"),
+                            html.Span(
+                                " ⚠ Resized to window — not to actual export scale",
+                                className="text-warning ms-2",
+                                style={'fontSize': '0.8em', 'fontWeight': 'normal'},
+                            ),
+                        ], width="auto", className="d-flex align-items-center"),
                         dbc.Col(
                             html.Small(
                                 "🛈 Pan: click & drag · Zoom: scroll or box-select · "
@@ -280,7 +287,7 @@ def _ppt_tab():
                     dbc.Checklist(id='ppt-auto-resize', className="mb-2",
                                   options=[{'label': ' Auto-resize slide canvas to image dimensions',
                                             'value': 'yes'}],
-                                  value=['yes']),
+                                  value=[]),
                     dbc.Button("📑 Build PPTX", id='btn-ppt-build', color='primary',
                                disabled=not _PPTX_AVAILABLE),
                     html.Div(id='ppt-build-status', className="mt-2 small"),

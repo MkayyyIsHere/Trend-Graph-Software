@@ -278,9 +278,18 @@ def build_plotly_figure(config: ConfigManager,
         pad = data_range * 0.05
         y_range = [data_min - pad, data_max + pad]
 
+    # Always compute x_range from config or full data extent so Live Preview
+    # shows the same axis span as the exported image (autosize only affects
+    # the figure's pixel dimensions, not the data range).
     x_range = None
     if x_min_dt and x_max_dt:
         x_range = [x_min_dt, x_max_dt]
+    elif flat_points:
+        all_ts = [dp.timestamp for dp in flat_points]
+        if tasks:
+            all_ts += [t for task in tasks for t in (task.start_time, task.end_time)]
+        if all_ts:
+            x_range = [min(all_ts), max(all_ts)]
 
     fig.update_layout(
         title=dict(text=cc.get('title', 'Data Over Time with Events'),
@@ -288,6 +297,7 @@ def build_plotly_figure(config: ConfigManager,
         xaxis=dict(
             title=ac.get('x_label', 'Date & Time'),
             range=x_range,
+            autorange=(x_range is None),  # lock range when we have an explicit span
             showgrid=True, gridcolor='rgba(80,80,80,0.25)',
             tickformat='%H:%M<br>%b %d',
             showspikes=True, spikemode='across', spikesnap='cursor',
