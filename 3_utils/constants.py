@@ -11,6 +11,22 @@
 # =============================================================================
 
 import os
+import sys
+
+# ---------------------------------------------------------------------------
+# Runtime root — works correctly in both PyCharm and PyInstaller .exe
+#
+# When frozen (.exe):  files are extracted to sys._MEIPASS (a temp folder).
+#                      The .exe itself sits in 8_dist/ — we use _MEIPASS so
+#                      bundled assets (5_configs, 6_templates) are found.
+# When running normally in PyCharm: walk up from this file to the repo root.
+# ---------------------------------------------------------------------------
+if getattr(sys, 'frozen', False):
+    # Inside the .exe — bundled assets live in _MEIPASS
+    _RUNTIME_ROOT = sys._MEIPASS
+else:
+    # In PyCharm — this file is 3_utils/constants.py, so go up two levels
+    _RUNTIME_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ---------------------------------------------------------------------------
 # Server
@@ -19,11 +35,11 @@ DASH_PORT = 8052
 DASH_HOST = "127.0.0.1"
 
 # ---------------------------------------------------------------------------
-# Paths
+# Paths  (always absolute, safe in both .exe and PyCharm)
 # ---------------------------------------------------------------------------
-DEFAULT_CONFIGS_DIR      = '5_configs'
-DEFAULT_AESTHETICS_PATH  = os.path.join(DEFAULT_CONFIGS_DIR, 'charts', 'aesthetics.json')
-DEFAULT_GANTT_CONFIG_PATH = 'config_gantt.json'
+DEFAULT_CONFIGS_DIR       = os.path.join(_RUNTIME_ROOT, '5_configs')
+DEFAULT_AESTHETICS_PATH   = os.path.join(DEFAULT_CONFIGS_DIR, 'charts', 'aesthetics.json')
+DEFAULT_GANTT_CONFIG_PATH = os.path.join(_RUNTIME_ROOT, '5_configs', 'events', 'config_composite_gantt.json')
 
 # ---------------------------------------------------------------------------
 # Resolution presets  (labels only — actual values are tuples for the UI)

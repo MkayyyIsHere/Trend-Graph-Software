@@ -12,3 +12,35 @@ build/
 5_configs
 6_templates
 7_samples
+
+# ── Virtual environment ──────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── PyInstaller build artifacts ──────────────────────────────────
+build/
+8_dist/
+*.spec
+
+# ── Python cache ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ── Generated output (not source) ────────────────────────────────
+7_samples/output_images/
+
+# ── OS / editor junk ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# ── Secrets / local config ───────────────────────────────────────
+.env
+*.env.local

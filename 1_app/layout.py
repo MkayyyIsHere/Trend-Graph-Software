@@ -42,9 +42,6 @@ def ensure_assets():
 
 def file_row(label, input_id, browse_id, upload_id, placeholder,
              extra_btn=None, width_label=2):
-    """Labelled file-input row: text box + Browse button only (no drop zone).
-    upload_id kept for API compatibility but no Upload component is rendered.
-    """
     buttons = [
         dbc.Button("📁 Browse", id=browse_id, color='secondary', size='sm', className='me-1'),
     ]
@@ -58,7 +55,6 @@ def file_row(label, input_id, browse_id, upload_id, placeholder,
 
 
 def folder_browse_row(label, input_id, browse_id, placeholder):
-    """Folder path row with a Tkinter Browse button — no drop zone."""
     return dbc.Row([
         dbc.Col(dbc.Label(label), width=2),
         dbc.Col(dbc.Input(id=input_id, placeholder=placeholder, size='sm'), width=True),
@@ -72,7 +68,6 @@ def folder_browse_row(label, input_id, browse_id, placeholder):
 def collapsible_log_card(card_id, collapse_id, output_id, hidden_ta_id,
                          copy_btn_id, clear_btn_id, toggle_btn_id,
                          title, bg_color='#1e1e2e', height='260px', extra_style=None):
-    """Reusable collapsible log card."""
     style = {**_LOG_STYLE_BASE, 'height': height, 'background': bg_color}
     if extra_style:
         style.update(extra_style)
@@ -106,8 +101,6 @@ def _chart_tab():
         'log-card', 'log-collapse', 'log-output', 'log-text-hidden',
         'btn-copy-log', 'btn-clear-log', 'btn-toggle-log', 'Log',
     )
-
-    # remove extra_style={'color': '#c3e88d'} from the batch_log call
     batch_log = collapsible_log_card(
         'batch-log-card', 'batch-log-collapse', 'batch-log-output', 'batch-log-text-hidden',
         'btn-copy-batch-log', 'btn-clear-batch-log', 'btn-toggle-batch-log',
@@ -116,7 +109,8 @@ def _chart_tab():
 
     return dbc.Tab(label="📊 Chart Plotter", tab_id="tab-chart", children=[
         dbc.Container(fluid=True, children=[
-            # Gantt / Event
+
+            # ── Gantt / Event ────────────────────────────────────────────────
             dbc.Card(className="mb-3", children=[
                 dbc.CardHeader(html.B("Gantt / Event Overlay")),
                 dbc.CardBody([
@@ -130,7 +124,8 @@ def _chart_tab():
                                                   color='info', size='sm', outline=True)),
                 ]),
             ]),
-            # Single chart
+
+            # ── Single Chart ─────────────────────────────────────────────────
             dbc.Card(className="mb-3", children=[
                 dbc.CardHeader(html.B("Single Chart")),
                 dbc.CardBody([
@@ -158,25 +153,65 @@ def _chart_tab():
                     html.Div(id='generate-status', className="mt-2 small"),
                 ]),
             ]),
-            # Batch
+
+            # ── Batch Processing ─────────────────────────────────────────────
             dbc.Card(className="mb-3", children=[
                 dbc.CardHeader(html.B("Batch Processing")),
                 dbc.CardBody([
+
+                    # Folder inputs
                     folder_browse_row("Config Folder:", 'batch-config-folder',
-                                      'btn-browse-batch-config', 'Folder of plot config JSONs…'),
+                                      'btn-browse-batch-config',
+                                      'Folder containing chart JSON configs…'),
                     folder_browse_row("Data Folder:",   'batch-data-folder',
-                                      'btn-browse-batch-data',   'Folder of CSV / TXT data files…'),
+                                      'btn-browse-batch-data',
+                                      'Folder containing CSV / TXT data files…'),
                     folder_browse_row("Output Folder:", 'batch-output-folder',
-                                      'btn-browse-batch-output', 'Output folder for exported PNGs…'),
-                    html.Div(id='batch-summary', className="text-primary small mb-2"),
-                    dbc.Row([dbc.Col([
-                        dbc.Button("▶ Run Batch", id='btn-batch', color='warning', className='me-2'),
-                        dbc.Button("⏹ E-Stop",   id='btn-estop', color='danger', disabled=True,
-                                   title='Stop batch after current charts finish'),
-                    ], className='d-flex align-items-center')]),
+                                      'btn-browse-batch-output',
+                                      'Folder to save output PNG images…'),
+
+                    html.Hr(className="my-2"),
+
+                    # Config name chips — shows exactly which configs will run
+                    html.Div(id='batch-queue-list', className="mb-3"),
+
+                    # Action row: buttons + inline progress bar
+                    dbc.Row([
+                        dbc.Col(html.Div([
+                            dbc.Button("▶ Run Batch", id='btn-batch', color='warning',
+                                       className='me-2'),
+                            dbc.Button("⏹ E-Stop",   id='btn-estop', color='danger',
+                                       disabled=True),
+                        ]), width='auto', className="d-flex align-items-center"),
+
+                        # Progress bar — hidden at rest, shown during a batch
+                        dbc.Col(
+                            html.Div(
+                                id='batch-progress-container',
+                                style={'display': 'none'},
+                                children=[
+                                    dbc.Progress(
+                                        id='batch-progress-bar',
+                                        value=0, max=100,
+                                        striped=True, animated=True,
+                                        color='warning',
+                                        style={'height': '22px', 'minWidth': '260px'},
+                                    ),
+                                    html.Small(
+                                        id='batch-progress-label',
+                                        className="text-muted mt-1 d-block",
+                                        style={'fontSize': '11px'},
+                                    ),
+                                ],
+                            ),
+                            className="d-flex align-items-center ps-3",
+                        ),
+                    ], align="center", className="mb-2"),
+
                     html.Div(id='batch-status', className="mt-2 small"),
                 ]),
             ]),
+
             batch_log,
             log_panel,
         ]),
@@ -207,13 +242,10 @@ def _preview_tab():
                         ),
                     ], align="center"),
                 ),
-                # Scrollable container: fixed viewport height, scroll to see full chart
                 dbc.CardBody(
                     html.Div(
                         dcc.Graph(
                             id='plotly-preview',
-                            # responsive=True makes the graph fill its parent
-                            # div, not the other way around.
                             responsive=True,
                             style={'width': '100%', 'height': '100%'},
                             config={
@@ -223,15 +255,13 @@ def _preview_tab():
                                 'toImageButtonOptions': {
                                     'format': 'png',
                                     'filename': 'composite_preview',
-                                    'height': None,   # uses figure's own height
-                                    'width':  None,   # uses figure's own width
+                                    'height': None,
+                                    'width':  None,
                                     'scale': 1,
                                 },
                             },
                         ),
                         style={
-                            # Fixed viewport: user scrolls inside to see the
-                            # full-resolution chart without breaking page layout.
                             'height': '600px',
                             'overflowY': 'auto',
                             'overflowX': 'auto',
@@ -359,13 +389,15 @@ def _data_preview_modal():
 
 def _stores():
     return html.Div([
-        dcc.Store(id='store-config-loaded',  data=False),
-        dcc.Store(id='store-gantt-loaded',   data=False),
-        dcc.Store(id='store-preview-ready',  data=False),
-        dcc.Store(id='store-series-summary', data=None),
-        dcc.Store(id='store-task-summary',   data=None),
-        dcc.Store(id='store-batch-result',   data=None),
-        dcc.Store(id='store-ppt-result',     data=None),
+        dcc.Store(id='store-config-loaded',   data=False),
+        dcc.Store(id='store-gantt-loaded',    data=False),
+        dcc.Store(id='store-preview-ready',   data=False),
+        dcc.Store(id='store-series-summary',  data=None),
+        dcc.Store(id='store-task-summary',    data=None),
+        dcc.Store(id='store-batch-result',    data=None),
+        dcc.Store(id='store-ppt-result',      data=None),
+        # Tracks completed/total for live progress bar
+        dcc.Store(id='store-batch-progress',  data={'done': 0, 'total': 0}),
         dcc.Interval(id='interval-log',   interval=800,  n_intervals=0),
         dcc.Interval(id='interval-batch', interval=1000, n_intervals=0),
         dcc.Interval(id='interval-ppt',   interval=1000, n_intervals=0),

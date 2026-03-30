@@ -1,0 +1,89 @@
+Project Structure
+Generated : 2026-03-30 18:15:26
+Root      : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+============================================================
+Trend Graph Software/
+├── 1_app/
+│   ├── __init__.py
+│   ├── batch_profile_callbacks.py
+│   ├── callbacks.py
+│   ├── config_manager_callbacks.py
+│   ├── config_manager_layout.py
+│   ├── dash_app.py
+│   ├── layout.py
+│   ├── routes.py
+│   └── state.py
+├── 2_backend/
+│   ├── __init__.py
+│   ├── batch_profile.py
+│   ├── batch_worker.py
+│   ├── chart_gen.py
+│   ├── config.py
+│   ├── models.py
+│   ├── plotly_preview.py
+│   ├── ppt_builder.py
+│   └── processors.py
+├── 3_utils/
+│   ├── __init__.py
+│   ├── constants.py
+│   └── logger.py
+├── 4_assets/
+│   └── log_colors.css
+├── 5_configs/
+│   ├── charts/
+│   │   ├── 1_config_composite_Power Factor.json
+│   │   ├── 2_config_composite_Voltage.json
+│   │   ├── 3_confcomposite_Current.json
+│   │   ├── 5_config_composite_Frequency.json
+│   │   ├── 6_config_composite_THD Voltage.json
+│   │   ├── Active_Power.json
+│   │   ├── aesthetics.json
+│   │   └── batch_profile.json
+│   └── events/
+│       └── config_composite_gantt.json
+├── 6_templates/
+│   ├── output.pptx
+│   └── PQA_Template.pptx
+├── 7_samples/
+│   ├── batch_data/
+│   │   └── UPS-15-ISOTX-C1-IST-DAY4.txt
+│   ├── events/
+│   │   └── sample_events_day_4.csv
+│   └── output_images/
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__2_config_composite_Voltage.png
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__5_config_composite_Frequency.png
+│       └── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
+├── 8_dist/
+│   ├── 1_app/
+│   │   ├── __init__.py
+│   │   ├── batch_profile_callbacks.py
+│   │   ├── callbacks.py
+│   │   ├── config_manager_callbacks.py
+│   │   ├── config_manager_layout.py
+│   │   ├── dash_app.py
+│   │   ├── layout.py
+│   │   ├── routes.py
+│   │   └── state.py
+│   ├── 2_backend/
+│   │   ├── __init__.py
+│   │   ├── batch_profile.py
+│   │   ├── batch_worker.py
+│   │   ├── chart_gen.py
+│   │   ├── config.py
+│   │   ├── models.py
+│   │   ├── plotly_preview.py
+│   │   ├── ppt_builder.py
+│   │   └── processors.py
+│   ├── 3_utils/
+│   │   ├── __init__.py
+│   │   ├── constants.py
+│   │   └── logger.py
+│   └── TrendGraph_v1.0.0.exe
+├── build.py
+├── Changelog.md
+├── Contributing.md
+├── main.py
+├── scan_project.py
+└── Version.txt
+
+Total entries: 82
