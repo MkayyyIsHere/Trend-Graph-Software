@@ -323,9 +323,22 @@ def register_callbacks(app, state, temp_dir: str):
             return "", False
         if not os.path.isfile(path):
             return dbc.Alert(f"File not found: {path}", color="danger", className="py-1"), False
+
+        # Resolve aesthetics.json — look in the same folder as the chart config.
+        # This covers the standard layout (aesthetics.json lives alongside chart JSONs).
+        # Falls back to DEFAULT_AESTHETICS_PATH if not found there.
+        from utils.constants import DEFAULT_AESTHETICS_PATH
+        cfg_folder      = os.path.dirname(os.path.abspath(path))
+        candidate       = os.path.join(cfg_folder, 'aesthetics.json')
+        aesthetics_path = candidate if os.path.isfile(candidate) else DEFAULT_AESTHETICS_PATH
+
+        # Update the aesthetics path on the shared config so reload() uses it.
+        state.config.aesthetics_path = aesthetics_path
+
         if state.config.reload(path):
             sname = state.config.get_series_name()
-            state.logger.info(f"Config loaded: {path}  |  Series: {sname}")
+            state.logger.info(f"Config loaded: {path}  |  Series: {sname}  "
+                              f"|  aesthetics: {os.path.basename(aesthetics_path)}")
             return dbc.Alert(f"✓ {os.path.basename(path)}  — Series: {sname}",
                              color="success", className="py-1"), True
         return dbc.Alert("Failed to load config — check JSON structure.",
@@ -566,36 +579,75 @@ def register_callbacks(app, state, temp_dir: str):
             return []
         return _log_spans(state.log_lines, _main_log_class)
 
-    # ── Batch summary label ───────────────────────────────────────────────────
+    # ── Batch queue list ──────────────────────────────────────────────────────
+    # Reacts to folder changes AND profile store changes so toggling configs
+    # in Config Manager immediately reflects here.
     @app.callback(
-        Output('batch-summary', 'children'),
+        Output('batch-queue-list', 'children'),
+        Output('btn-batch',        'disabled', allow_duplicate=True),
         Input('batch-config-folder', 'value'),
         Input('batch-data-folder',   'value'),
         Input('batch-output-folder', 'value'),
+        Input('store-bp-order',      'data'),
+        Input('store-gantt-loaded',  'data'),
+        State('event-file-path',     'value'),
+        prevent_initial_call='initial_duplicate',
     )
-    def update_batch_summary(cfg_folder, data_folder, out_folder):
-        def _count(folder, exts):
-            if not folder or not os.path.isdir(folder):
-                return 0
-            return len([f for f in os.listdir(folder)
-                        if any(f.lower().endswith(e) for e in exts)])
-        nd = _count(data_folder, ['.csv', '.txt'])
+    def update_batch_readiness(cfg_folder, data_folder, out_folder,
+                               bp_order, gantt_loaded, event_path):
 
-        # Respect the Batch Profile if one exists
+        has_gantt  = bool(gantt_loaded)
+        has_event  = bool(event_path and os.path.isfile(event_path))
+        has_cfg    = bool(cfg_folder  and os.path.isdir(cfg_folder))
+        has_data   = bool(data_folder and os.path.isdir(data_folder))
+        has_output = bool(out_folder  and os.path.isdir(out_folder))
+
+        nd = 0
+        if has_data:
+            nd = len([f for f in os.listdir(data_folder)
+                      if f.lower().endswith(('.csv', '.txt'))])
+
         nc = 0
-        if cfg_folder and os.path.isdir(cfg_folder):
+        config_names = []
+        if has_cfg:
             _bpm = BatchProfileManager()
             _bpm.load(cfg_folder)
-            all_paths = _bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True)
-            # Exclude reserved infrastructure files from the chart count
-            nc = len([p for p in all_paths
-                      if os.path.basename(p) not in RESERVED_CONFIG_FILENAMES])
-        if nc and nd and out_folder:
-            return f"{nc} config(s) × {nd} data file(s) = {nc * nd} chart(s) to generate"
-        missing = [x for x, cond in [("config folder", not nc),
-                                      ("data folder",   not nd),
-                                      ("output folder", not out_folder)] if cond]
-        return f"Waiting for: {', '.join(missing)}" if missing else ""
+            paths = _bpm.get_ordered_paths(cfg_folder, fallback_alphabetical=True)
+            paths = [p for p in paths
+                     if os.path.basename(p) not in RESERVED_CONFIG_FILENAMES]
+            nc           = len(paths)
+            config_names = [os.path.basename(p) for p in paths]
+
+        all_ready = all([has_gantt, has_event, has_cfg, has_data,
+                         has_output, nc > 0, nd > 0])
+
+        if not config_names:
+            queue = html.Div(
+                html.Small("No configs in run queue — set config folder and save a profile.",
+                           className="text-muted fst-italic"),
+            )
+        else:
+            total = nc * nd if nd else nc
+            queue = html.Div([
+                html.Div(
+                    html.B(
+                        f"Run queue — {nc} config(s) × {nd} data file(s) = {total} chart(s)"
+                        if nd else f"Run queue — {nc} config(s)",
+                        className="small text-muted",
+                    ),
+                    className="mb-1",
+                ),
+                html.Div([
+                    dbc.Badge(
+                        f"{i+1}. {name.replace('_config_composite_','').replace('.json','')}",
+                        color="primary", className="me-1 mb-1",
+                        style={"fontFamily": "monospace", "fontSize": "10px"},
+                    )
+                    for i, name in enumerate(config_names)
+                ]),
+            ])
+
+        return queue, not all_ready
 
     # ── Run batch ─────────────────────────────────────────────────────────────
     @app.callback(
@@ -674,13 +726,19 @@ def register_callbacks(app, state, temp_dir: str):
 
         return dbc.Alert(f"⏳ Batch started — {total} charts, {n_workers} workers.", color="info"), True
 
-    # ── Batch log polling ─────────────────────────────────────────────────────
+    # ── Batch log polling + progress bar ──────────────────────────────────────
     @app.callback(
-        Output('batch-log-output', 'children'),
-        Output('btn-batch', 'disabled', allow_duplicate=True),
-        Output('btn-estop', 'disabled'),
-        Output('btn-estop', 'children'),
-        Output('batch-status', 'children', allow_duplicate=True),
+        Output('batch-log-output',         'children'),
+        Output('btn-batch',                'disabled', allow_duplicate=True),
+        Output('btn-estop',                'disabled'),
+        Output('btn-estop',                'children'),
+        Output('batch-status',             'children', allow_duplicate=True),
+        Output('batch-progress-bar',       'value'),
+        Output('batch-progress-bar',       'label'),
+        Output('batch-progress-bar',       'color'),
+        Output('batch-progress-bar',       'animated'),
+        Output('batch-progress-container', 'style'),
+        Output('batch-progress-label',     'children'),
         Input('interval-batch', 'n_intervals'),
         prevent_initial_call=True,
     )
@@ -690,6 +748,35 @@ def register_callbacks(app, state, temp_dir: str):
         stopped     = state.batch_stop_event.is_set()
         result      = state.batch_result
         estop_label = "⏹ Stopping…" if (still_run and stopped) else "⏹ E-Stop"
+
+        # Parse progress from log — count "✓" and "✗" completion lines
+        done_count  = sum(1 for line in state.batch_log if '] ✓' in line or '] ✗' in line)
+        # Extract total from the BATCH STARTED line
+        total_count = 0
+        for line in state.batch_log:
+            if 'BATCH STARTED' in line:
+                import re as _re
+                m = _re.search(r'(\d+) chart', line)
+                if m:
+                    total_count = int(m.group(1))
+                break
+
+        # Progress bar values
+        if total_count > 0:
+            pct      = int(round(done_count / total_count * 100))
+            pb_label = f"{done_count}/{total_count}"
+            pb_color = "danger" if stopped else ("success" if not still_run else "warning")
+            pb_anim  = still_run and not stopped
+            pb_style = {'display': 'block'}
+            pl_label = (f"Rendering… {done_count}/{total_count} charts"
+                        if still_run else f"Done — {done_count}/{total_count} charts")
+        else:
+            pct = 0; pb_label = ""; pb_color = "warning"
+            pb_anim = False; pb_style = {'display': 'none'}; pl_label = ""
+
+        # Hide progress container when idle and no result yet
+        if not still_run and result is None and total_count == 0:
+            pb_style = {'display': 'none'}
 
         if result is None:
             status = no_update
@@ -705,7 +792,8 @@ def register_callbacks(app, state, temp_dir: str):
             status = dbc.Alert(f"✓ Batch complete — {ok}/{result['done']} charts saved "
                                f"to {result['out_folder']}", color=clr)
 
-        return spans, still_run, not still_run, estop_label, status
+        return (spans, still_run, not still_run, estop_label, status,
+                pct, pb_label, pb_color, pb_anim, pb_style, pl_label)
 
     # ── Resolution preset selector ───────────────────────────────────────────
     @app.callback(

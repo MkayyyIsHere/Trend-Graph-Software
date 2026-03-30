@@ -3,7 +3,7 @@ import os
 import threading
 from typing import List, Optional
 
-from utils.constants import DEFAULT_GANTT_CONFIG_PATH
+from utils.constants import DEFAULT_GANTT_CONFIG_PATH, DEFAULT_AESTHETICS_PATH
 from utils.logger import GUILogger
 from backend.models import DataPoint, Task
 from backend.config import ConfigManager, GanttConfigManager
@@ -30,9 +30,13 @@ class AppState:
 
         # Backend config objects (reloaded per file-path change)
         _default = DEFAULT_GANTT_CONFIG_PATH if os.path.exists(DEFAULT_GANTT_CONFIG_PATH) else None
-        self.config       = ConfigManager(_default)
-        self.gantt_config = GanttConfigManager(_default)
         self.logger       = GUILogger(callback=self.log_lines.append)
+        self.config       = ConfigManager(
+            config_path     = None,
+            aesthetics_path = DEFAULT_AESTHETICS_PATH,
+            logger          = self.logger,
+        )
+        self.gantt_config = GanttConfigManager(_default)
 
         # Last generated chart artifacts (kept in memory, no temp file)
         self.last_all_data_points: Optional[List[List[DataPoint]]] = None
