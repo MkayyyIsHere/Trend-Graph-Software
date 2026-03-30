@@ -1,0 +1,53 @@
+{
+  "_description": "Config for plotting 3-Phase Active Power over time with Gantt events overlay.",
+  "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics (fonts, resolution, grid, legend) are inherited from aesthetics.json.",
+  "series": [
+    {
+      "name": "P Avg A",
+      "value_column": "PowerPfund_A_avg",
+      "value_column_keywords": [
+        "PowerPfund_A_avg"
+      ],
+      "line_color": "#4C72B0",
+      "linewidth": 1.5,
+      "linestyle": "-",
+      "alpha": 0.65,
+      "marker": "none"
+    },
+    {
+      "name": "P Avg B",
+      "value_column": "PowerPfund_B_avg",
+      "value_column_keywords": [
+        "PowerPfund_B_avg"
+      ],
+      "line_color": "#DD8452",
+      "linewidth": 1.5,
+      "linestyle": "-",
+      "alpha": 0.65,
+      "marker": "none"
+    },
+    {
+      "name": "P Avg C",
+      "value_column": "PowerPfund_C_avg",
+      "value_column_keywords": [
+        "PowerPfund_C_avg"
+      ],
+      "line_color": "#55A868",
+      "linewidth": 1.5,
+      "linestyle": "-",
+      "alpha": 0.65,
+      "marker": "none"
+    }
+  ],
+  "chart": {
+    "title": "Active Power Over Time Testing"
+  },
+  "axis": {
+    "x_label": "Date & Time",
+    "y_label": "Active Power (kW)",
+    "y_min": -50000.0,
+    "y_max": 1500000.0,
+    "x_min": "2026-01-24 12:00:00",
+    "x_max": "2026-01-25 03:00:00"
+  }
+}

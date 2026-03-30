@@ -1,5 +1,5 @@
 Project Structure
-Generated : 2026-03-30 18:15:26
+Generated : 2026-03-30 19:12:40
 Root      : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
 ============================================================
 Trend Graph Software/
@@ -54,36 +54,14 @@ Trend Graph Software/
 │       ├── UPS-15-ISOTX-C1-IST-DAY4__5_config_composite_Frequency.png
 │       └── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
 ├── 8_dist/
-│   ├── 1_app/
-│   │   ├── __init__.py
-│   │   ├── batch_profile_callbacks.py
-│   │   ├── callbacks.py
-│   │   ├── config_manager_callbacks.py
-│   │   ├── config_manager_layout.py
-│   │   ├── dash_app.py
-│   │   ├── layout.py
-│   │   ├── routes.py
-│   │   └── state.py
-│   ├── 2_backend/
-│   │   ├── __init__.py
-│   │   ├── batch_profile.py
-│   │   ├── batch_worker.py
-│   │   ├── chart_gen.py
-│   │   ├── config.py
-│   │   ├── models.py
-│   │   ├── plotly_preview.py
-│   │   ├── ppt_builder.py
-│   │   └── processors.py
-│   ├── 3_utils/
-│   │   ├── __init__.py
-│   │   ├── constants.py
-│   │   └── logger.py
+│   ├── debug_log.txt
 │   └── TrendGraph_v1.0.0.exe
 ├── build.py
 ├── Changelog.md
 ├── Contributing.md
 ├── main.py
+├── requirements.txt
 ├── scan_project.py
 └── Version.txt
 
-Total entries: 82
+Total entries: 60

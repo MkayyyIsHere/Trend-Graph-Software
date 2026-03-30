@@ -1,0 +1,45 @@
+{
+  "_description": "Master aesthetics config — single source of truth for all visual settings.",
+  "_usage": "Loaded automatically before any per-chart config. Per-chart JSONs may override fields here, but a WARNING will be logged.",
+  "font": {
+    "family": "sans-serif",
+    "title_size": 72,
+    "axis_label_size": 25,
+    "tick_size": 12,
+    "legend_size": 13,
+    "scale_factor": 1.0
+  },
+  "legend": {
+    "width_px": 500,
+    "wrap_width": 28,
+    "pad_top": 0.5,
+    "pad_sep_above": 0.4,
+    "pad_sep_below": 0.4,
+    "gap_slots": 0.5
+  },
+  "chart": {
+    "background_color": "#ffffff",
+    "resolution_px": [
+      2560,
+      1440
+    ],
+    "dpi": 96
+  },
+  "grid": {
+    "visible": true,
+    "axis": "both",
+    "linestyle": "-",
+    "alpha": 0.3,
+    "color": "#505050",
+    "gridwidth": 1.0
+  },
+  "subplot_params": {
+    "left": 0.03,
+    "right": 0.92,
+    "top": 0.95,
+    "bottom": 0.06,
+    "legend_x": 0.92,
+    "legend_y": 0.83
+  },
+  "linewidth_scale_factor": 1.0
+}

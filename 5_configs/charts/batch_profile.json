@@ -1,0 +1,7 @@
+{
+  "ordered_configs": [
+    "2_config_composite_Voltage.json",
+    "5_config_composite_Frequency.json",
+    "Active_Power.json"
+  ]
+}

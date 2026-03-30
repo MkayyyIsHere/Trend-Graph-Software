@@ -1,0 +1,19 @@
+#log-output .log-info,
+#batch-log-output .log-info,
+#ppt-log-output .log-info    { color: #a6e3a1 !important; }
+
+#log-output .log-warning,
+#batch-log-output .log-warning,
+#ppt-log-output .log-warning { color: #f9e2af !important; }
+
+#log-output .log-error,
+#batch-log-output .log-error,
+#ppt-log-output .log-error   { color: #f38ba8 !important; }
+
+#log-output .log-debug,
+#batch-log-output .log-debug,
+#ppt-log-output .log-debug   { color: #89b4fa !important; }
+
+#log-output .log-default,
+#batch-log-output .log-default,
+#ppt-log-output .log-default { color: #cdd6f4 !important; }

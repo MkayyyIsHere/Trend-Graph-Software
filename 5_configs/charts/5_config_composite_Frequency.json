@@ -1,0 +1,30 @@
+{
+  "_description": "Config for plotting Frequency over time with Gantt events overlay.",
+  "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics inherited from aesthetics.json.",
+  "series": [
+    {
+      "name": "Frequency",
+      "value_column": null,
+      "value_column_keywords": [
+        "frequency",
+        "freq"
+      ],
+      "line_color": "#b31e1e",
+      "linewidth": 1.5,
+      "linestyle": "-",
+      "alpha": 0.65,
+      "marker": "none"
+    }
+  ],
+  "chart": {
+    "title": "Frequency Over Time with Events"
+  },
+  "axis": {
+    "x_label": "Date & Time",
+    "y_label": "Frequency (Hz)",
+    "y_min": -1.0,
+    "y_max": 100.0,
+    "x_min": "2026-01-24 12:00:00",
+    "x_max": "2026-01-25 03:00:00"
+  }
+}

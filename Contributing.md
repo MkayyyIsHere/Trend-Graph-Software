@@ -55,3 +55,21 @@ Keep it short and factual:
 - `update batch profile config`
 
 Do not write: `changed stuff`, `updates`, `fix`
+
+---
+ 1. Always start by syncing develop
+   ```
+   git checkout develop
+   git pull origin develop
+   ```
+
+2. Do your work, save as you go
+```
+git add .
+git commit -m "what you changed"
+git push origin develop
+```
+
+3. When ready to release — merge develop into main on GitHub
+- Go to GitHub → Pull Requests → New → base: main ← compare: develop
+- Merge, then tag it, then run python build.py

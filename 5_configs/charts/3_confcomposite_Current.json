@@ -1,0 +1,59 @@
+{
+  "_description": "Config for plotting 3-Phase Current over time with Gantt events overlay.",
+  "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics inherited from aesthetics.json.",
+  "series": [
+    {
+      "name": "Irms AB",
+      "value_column": "Irms_AB_avg",
+      "value_column_keywords": [
+        "irms_ab",
+        "current_ab",
+        "iab"
+      ],
+      "line_color": "#E69F00",
+      "linewidth": 2.2,
+      "linestyle": "-",
+      "alpha": 0.5,
+      "marker": "none"
+    },
+    {
+      "name": "Irms BC",
+      "value_column": "Irms_BC_avg",
+      "value_column_keywords": [
+        "irms_bc",
+        "current_bc",
+        "ibc"
+      ],
+      "line_color": "#56B4E9",
+      "linewidth": 1.8,
+      "linestyle": "-",
+      "alpha": 0.65,
+      "marker": "none"
+    },
+    {
+      "name": "Irms CA",
+      "value_column": "Irms_CA_avg",
+      "value_column_keywords": [
+        "irms_ca",
+        "current_ca",
+        "ica"
+      ],
+      "line_color": "#009E73",
+      "linewidth": 1.4,
+      "linestyle": "-",
+      "alpha": 0.8,
+      "marker": "none"
+    }
+  ],
+  "chart": {
+    "title": "Current Over Time with Events"
+  },
+  "axis": {
+    "x_label": "Date & Time",
+    "y_label": "Current (A)",
+    "y_min": 0.0,
+    "y_max": 1500.0,
+    "x_min": "2026-01-24 12:00:00",
+    "x_max": "2026-01-25 03:00:00"
+  }
+}
