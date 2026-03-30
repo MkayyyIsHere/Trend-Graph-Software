@@ -2,6 +2,10 @@
 build.py  —  run this from the repo root to produce the .exe
 Usage:  python build.py
 Output: 8_dist/TrendGraph_v<version>.exe
+
+NOTE: 5_configs and 6_templates are NOT bundled in the .exe.
+Distribute them separately on SharePoint as a zip alongside the .exe.
+Users select their config folder at runtime via the app's folder picker.
 """
 
 import subprocess
@@ -16,10 +20,8 @@ DIST_DIR = Path("8_dist")
 
 print(f"Building {APP_NAME} ...")
 
-# ── Resolve repo root path (no f-string issues) ───────────────────
 REPO_ROOT = str(Path(".").resolve())
 
-# ── Write .spec file ──────────────────────────────────────────────
 SPEC_CONTENT = """# -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
@@ -49,13 +51,15 @@ hidden += collect_submodules('pptx')
 hidden += collect_submodules('PIL')
 hidden += collect_submodules('kaleido')
 
+# ── Source folders only — configs and templates are external ──────
+# 5_configs and 6_templates are NOT bundled here.
+# They are distributed separately on SharePoint as a zip.
+# Users select their config folder at runtime via the folder picker.
 datas = [
-    ('1_app',       '1_app'),
-    ('2_backend',   '2_backend'),
-    ('3_utils',     '3_utils'),
-    ('4_assets',    '4_assets'),
-    ('5_configs',   '5_configs'),
-    ('6_templates', '6_templates'),
+    ('1_app',     '1_app'),
+    ('2_backend', '2_backend'),
+    ('3_utils',   '3_utils'),
+    ('4_assets',  '4_assets'),
 ]
 datas += collect_data_files('dash')
 datas += collect_data_files('dash_bootstrap_components')
@@ -93,7 +97,7 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,          # keep True until fully working, then change to False
+    console=True,          # change to False once fully working
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -106,7 +110,7 @@ spec_path = Path(f"{APP_NAME}.spec")
 spec_path.write_text(SPEC_CONTENT, encoding="utf-8")
 print(f"Written {spec_path}")
 
-# ── Delete old .exe if it exists (avoid Windows permission error) ─
+# ── Delete old .exe if exists (avoid Windows permission error) ────
 old_exe = DIST_DIR / f"{APP_NAME}.exe"
 if old_exe.exists():
     try:
@@ -139,4 +143,6 @@ shutil.rmtree("build", ignore_errors=True)
 spec_path.unlink(missing_ok=True)
 
 print(f"\nDone!  ->  {DIST_DIR / APP_NAME}.exe")
-print("Next: copy this .exe to SharePoint/Releases/latest/")
+print("Next steps:")
+print("  1. Copy 8_dist/TrendGraph_v{VERSION}.exe  → SharePoint/Releases/latest/")
+print("  2. Copy 5_configs/ + 6_templates/          → SharePoint/Releases/latest/configs.zip")

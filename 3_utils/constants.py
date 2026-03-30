@@ -3,11 +3,17 @@
 #
 # WHERE TO CHANGE THINGS
 # ├── fonts, sizes, resolution, background, grid, legend padding
-# │     → 5_configs/aesthetics.json
+# │     → user's 5_configs/aesthetics.json  (outside the .exe)
 # ├── series colors/names/columns, chart title, axis labels, y/x limits
-# │     → 5_configs/charts/<chart_name>.json
-# └── port, paths, resolution preset labels
+# │     → user's 5_configs/charts/<chart_name>.json
+# └── port, resolution preset labels
 #       → here (constants.py)
+#
+# NOTE ON PATHS
+# 5_configs and 6_templates are NOT bundled inside the .exe.
+# The user selects their own config folder at runtime via the app's UI.
+# DEFAULT_CONFIGS_DIR and DEFAULT_AESTHETICS_PATH are left as empty strings
+# here — the app populates them from the user's folder picker selection.
 # =============================================================================
 
 import os
@@ -15,17 +21,10 @@ import sys
 
 # ---------------------------------------------------------------------------
 # Runtime root — works correctly in both PyCharm and PyInstaller .exe
-#
-# When frozen (.exe):  files are extracted to sys._MEIPASS (a temp folder).
-#                      The .exe itself sits in 8_dist/ — we use _MEIPASS so
-#                      bundled assets (5_configs, 6_templates) are found.
-# When running normally in PyCharm: walk up from this file to the repo root.
 # ---------------------------------------------------------------------------
 if getattr(sys, 'frozen', False):
-    # Inside the .exe — bundled assets live in _MEIPASS
     _RUNTIME_ROOT = sys._MEIPASS
 else:
-    # In PyCharm — this file is 3_utils/constants.py, so go up two levels
     _RUNTIME_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ---------------------------------------------------------------------------
@@ -35,11 +34,18 @@ DASH_PORT = 8052
 DASH_HOST = "127.0.0.1"
 
 # ---------------------------------------------------------------------------
-# Paths  (always absolute, safe in both .exe and PyCharm)
+# Paths
+#
+# These are intentionally empty — the user selects their config folder
+# at runtime via the app's folder picker. Any code that needs the config
+# path should receive it as a parameter rather than reading these defaults.
+#
+# In PyCharm (dev mode) you can temporarily set these to your local paths
+# for convenience, but do not commit hardcoded paths.
 # ---------------------------------------------------------------------------
-DEFAULT_CONFIGS_DIR       = os.path.join(_RUNTIME_ROOT, '5_configs')
-DEFAULT_AESTHETICS_PATH   = os.path.join(DEFAULT_CONFIGS_DIR, 'charts', 'aesthetics.json')
-DEFAULT_GANTT_CONFIG_PATH = os.path.join(_RUNTIME_ROOT, '5_configs', 'events', 'config_composite_gantt.json')
+DEFAULT_CONFIGS_DIR       = ""
+DEFAULT_AESTHETICS_PATH   = ""
+DEFAULT_GANTT_CONFIG_PATH = ""
 
 # ---------------------------------------------------------------------------
 # Resolution presets  (labels only — actual values are tuples for the UI)
