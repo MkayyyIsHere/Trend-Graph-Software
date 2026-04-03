@@ -2,7 +2,7 @@
   "_description": "Shared Gantt/Event overlay config — applies to ALL data type plots (frequency, voltage, current, etc.)",
   "_usage": "Load this file using the 'Browse Gantt Config...' button in the GUI. Settings here always override any gantt/gantt_colors sections in the data config.",
   "gantt": {
-    "bar_alpha": 0.3,
+    "bar_alpha": 0.1,
     "bar_height_ratio": 1.0,
     "edge_color": "#000000",
     "edge_width": 0.2

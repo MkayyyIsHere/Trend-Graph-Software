@@ -1,5 +1,5 @@
 Project Structure
-Generated : 2026-03-30 19:12:40
+Generated : 2026-04-03 16:45:31
 Root      : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
 ============================================================
 Trend Graph Software/
@@ -50,18 +50,27 @@ Trend Graph Software/
 │   ├── events/
 │   │   └── sample_events_day_4.csv
 │   └── output_images/
+│       ├── Obsulte/
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__2_config_composite_Voltage.png
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__5_config_composite_Frequency.png
+│       │   └── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
 │       ├── UPS-15-ISOTX-C1-IST-DAY4__2_config_composite_Voltage.png
 │       ├── UPS-15-ISOTX-C1-IST-DAY4__5_config_composite_Frequency.png
 │       └── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
 ├── 8_dist/
+│   ├── Obsolute/
+│   │   └── TrendGraph_v1.0.0.exe
 │   ├── debug_log.txt
-│   └── TrendGraph_v1.0.0.exe
+│   └── TrendGraph_v1.0.1.exe
+├── Aesthetics guide.md
 ├── build.py
 ├── Changelog.md
 ├── Contributing.md
+├── debug_log.txt
+├── last_session.json
 ├── main.py
 ├── requirements.txt
 ├── scan_project.py
 └── Version.txt
 
-Total entries: 60
+Total entries: 69

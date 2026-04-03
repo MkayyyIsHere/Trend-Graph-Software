@@ -1,14 +1,15 @@
 {
   "_description": "Config for plotting 3-Phase Power Factor over time with Gantt events overlay.",
   "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics (fonts, resolution, grid, legend) are inherited from aesthetics.json.",
-
   "series": [
     {
       "name": "PF Avg A",
       "value_column": "PfFwdRev_A_avg",
-      "value_column_keywords": ["pffwdrev_a_avg"],
+      "value_column_keywords": [
+        "pffwdrev_a_avg"
+      ],
       "line_color": "#d62728",
-      "linewidth": 1.5,
+      "linewidth": 0.5,
       "linestyle": "-",
       "alpha": 0.65,
       "marker": "none"
@@ -16,9 +17,11 @@
     {
       "name": "PF Avg B",
       "value_column": "PfFwdRev_B_avg",
-      "value_column_keywords": ["pffwdrev_b_avg"],
+      "value_column_keywords": [
+        "pffwdrev_b_avg"
+      ],
       "line_color": "#2ca02c",
-      "linewidth": 1.5,
+      "linewidth": 0.5,
       "linestyle": "-",
       "alpha": 0.65,
       "marker": "none"
@@ -26,24 +29,24 @@
     {
       "name": "PF Avg C",
       "value_column": "PfFwdRev_C_avg",
-      "value_column_keywords": ["pffwdrev_c_avg"],
+      "value_column_keywords": [
+        "pffwdrev_c_avg"
+      ],
       "line_color": "#1f77b4",
-      "linewidth": 1.5,
+      "linewidth": 0.5,
       "linestyle": "-",
       "alpha": 0.65,
       "marker": "none"
     }
   ],
-
   "chart": {
     "title": "Power Factor Over Time"
   },
-
   "axis": {
     "x_label": "Date & Time",
     "y_label": "Power Factor",
-    "y_min": null,
-    "y_max": null,
+    "y_min": 0.0,
+    "y_max": 1.5,
     "x_min": "2026-01-24 12:00:00",
     "x_max": "2026-01-25 03:00:00"
   }

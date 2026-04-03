@@ -144,5 +144,5 @@ spec_path.unlink(missing_ok=True)
 
 print(f"\nDone!  ->  {DIST_DIR / APP_NAME}.exe")
 print("Next steps:")
-print("  1. Copy 8_dist/TrendGraph_v{VERSION}.exe  → SharePoint/Releases/latest/")
+print(f"  1. Copy 8_dist/TrendGraph_v{VERSION}.exe  → SharePoint/Releases/latest/")
 print("  2. Copy 5_configs/ + 6_templates/          → SharePoint/Releases/latest/configs.zip")

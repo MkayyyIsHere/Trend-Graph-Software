@@ -1,7 +1,10 @@
 {
   "ordered_configs": [
-    "2_config_composite_Voltage.json",
-    "5_config_composite_Frequency.json",
-    "Active_Power.json"
+    "Active_Power.json",
+    "Power Factor.json",
+    "Voltage.json",
+    "Current.json",
+    "Frequency.json",
+    "THD Voltage.json"
   ]
 }
