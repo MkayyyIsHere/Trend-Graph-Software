@@ -21,6 +21,27 @@ _AESTHETICS_FILENAME   = 'aesthetics.json'
 _BATCH_PROFILE_FILENAME = 'batch_profile.json'
 _RESERVED = {_AESTHETICS_FILENAME, _BATCH_PROFILE_FILENAME}
 
+_SESSION_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'last_session.json')
+
+def _load_last_folder() -> str:
+    try:
+        if os.path.exists(_SESSION_FILE):
+            with open(_SESSION_FILE, encoding='utf-8') as f:
+                data = json.load(f)
+            folder = data.get('last_config_folder', '')
+            if folder and os.path.isdir(folder):
+                return folder
+    except Exception:
+        pass
+    return ''
+
+def _save_last_folder(folder: str) -> None:
+    try:
+        with open(_SESSION_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'last_config_folder': folder}, f)
+    except Exception:
+        pass
+
 
 def _list_json_files(folder: str) -> list[str]:
     """Return sorted list of chart .json filenames in *folder* (reserved files excluded)."""
@@ -95,8 +116,8 @@ def _build_config_from_form(
         },
     }
 
-    if y_min not in (None, ""):  cfg["axis"]["y_min"] = _safe_float(y_min)
-    if y_max not in (None, ""):  cfg["axis"]["y_max"] = _safe_float(y_max)
+    if y_min is not None:  cfg["axis"]["y_min"] = _safe_float(y_min)
+    if y_max is not None:  cfg["axis"]["y_max"] = _safe_float(y_max)
     if x_min not in (None, ""):  cfg["axis"]["x_min"] = str(x_min)
     if x_max not in (None, ""):  cfg["axis"]["x_max"] = str(x_max)
 
@@ -109,7 +130,7 @@ def _build_aesthetics_from_form(
     res_w, res_h, dpi,
     grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
     sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
-    legend_width_px, legend_wrap_w,
+    legend_wrap_w,
     pad_top, pad_sep_above, pad_sep_below, gap_slots,
     lw_scale,
 ) -> dict:
@@ -126,7 +147,7 @@ def _build_aesthetics_from_form(
             "scale_factor":    _safe_float(font_scale, 1.0),
         },
         "legend": {
-            "width_px":      _safe_int(legend_width_px, 500),
+
             "wrap_width":    _safe_int(legend_wrap_w, 28),
             "pad_top":       _safe_float(pad_top,       0.5),
             "pad_sep_above": _safe_float(pad_sep_above, 0.4),
@@ -173,8 +194,8 @@ def _populate_form_from_config(cfg: dict):
         "chart_title":  chart.get("title", ""),
         "x_label":      axis.get("x_label", ""),
         "y_label":      axis.get("y_label", ""),
-        "y_min":        axis.get("y_min", ""),
-        "y_max":        axis.get("y_max", ""),
+        "y_min":        axis.get("y_min"),   # None when absent — never "" so 0.0 displays correctly
+        "y_max":        axis.get("y_max"),   # None when absent — never "" so 0.0 displays correctly
         "x_min":        axis.get("x_min", ""),
         "x_max":        axis.get("x_max", ""),
     }
@@ -337,6 +358,14 @@ def register_config_manager_callbacks(app, state):
         prevent_initial_call=True,
     )
 
+    # ── Restore last folder path on page load ────────────────────────────
+    @app.callback(
+        Output("cfgmgr-folder-path", "value"),
+        Input("cfgmgr-folder-path",  "id"),
+    )
+    def restore_last_folder(_):
+        return _load_last_folder()
+
     # ── Drop any file from folder → extract folder path ──────────────────
     @app.callback(
         Output("cfgmgr-folder-path", "value", allow_duplicate=True),
@@ -367,6 +396,8 @@ def register_config_manager_callbacks(app, state):
         prevent_initial_call=True,
     )
     def refresh_file_list(_, folder, selected):
+        if folder and folder.strip() and os.path.isdir(folder.strip()):
+            _save_last_folder(folder.strip())
         if not folder or not folder.strip():
             return (
                 [html.P("Enter a folder path above and click Refresh.",
@@ -888,7 +919,6 @@ def register_config_manager_callbacks(app, state):
         State("aes-sp-bottom",        "value"),
         State("aes-sp-lgx",           "value"),
         State("aes-sp-lgy",           "value"),
-        State("aes-legend-width-px",  "value"),
         State("aes-legend-wrap-w",    "value"),
         State("aes-pad-top",          "value"),
         State("aes-pad-sep-above",    "value"),
@@ -903,7 +933,7 @@ def register_config_manager_callbacks(app, state):
         bg_color_hex, res_w, res_h, dpi,
         grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
         sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
-        legend_width_px, legend_wrap_w,
+        legend_wrap_w,
         pad_top, pad_sep_above, pad_sep_below, gap_slots,
         lw_scale,
     ):
@@ -915,7 +945,7 @@ def register_config_manager_callbacks(app, state):
             bg_color_hex, res_w, res_h, dpi,
             grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
             sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
-            legend_width_px, legend_wrap_w,
+            legend_wrap_w,
             pad_top, pad_sep_above, pad_sep_below, gap_slots,
             lw_scale,
         )
@@ -923,7 +953,8 @@ def register_config_manager_callbacks(app, state):
         try:
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2, ensure_ascii=False)
-            return dbc.Alert(f"✓ Saved aesthetics.json → {out_path}",
+            state.config.reload_aesthetics(out_path)
+            return dbc.Alert(f"✓ Saved & applied aesthetics.json → {out_path}",
                              color="success", className="py-1 mb-0")
         except Exception as e:
             return dbc.Alert(f"❌ Error saving aesthetics: {e}",
@@ -955,7 +986,6 @@ def register_config_manager_callbacks(app, state):
         Output("aes-sp-bottom",      "value"),
         Output("aes-sp-lgx",         "value"),
         Output("aes-sp-lgy",         "value"),
-        Output("aes-legend-width-px","value"),
         Output("aes-legend-wrap-w",  "value"),
         Output("aes-pad-top",        "value"),
         Output("aes-pad-sep-above",  "value"),
@@ -965,7 +995,6 @@ def register_config_manager_callbacks(app, state):
         Output("aes-load-status",    "children"),
         Input("btn-cfgmgr-refresh",  "n_clicks"),
         Input("cfgmgr-folder-path",  "value"),
-        prevent_initial_call=True,
     )
     def load_aesthetics(_, folder):
         DEFAULTS = (
@@ -973,7 +1002,7 @@ def register_config_manager_callbacks(app, state):
             "#ffffff", "#ffffff", 2560, 1440, 96,
             "true", "both", "-", 0.3, 1.0, "#505050", "#505050",
             0.03, 0.92, 0.95, 0.06, 0.92, 0.83,
-            500, 28, 0.5, 0.4, 0.4, 0.5, 1.0,
+            28, 0.5, 0.4, 0.4, 0.5, 1.0,
             html.Small("Using built-in defaults (aesthetics.json not found).",
                        className="text-muted"),
         )
@@ -1020,7 +1049,7 @@ def register_config_manager_callbacks(app, state):
             sp.get("left", 0.03), sp.get("right", 0.92),
             sp.get("top", 0.95),  sp.get("bottom", 0.06),
             sp.get("legend_x", 0.92), sp.get("legend_y", 0.83),
-            leg.get("width_px", 500), leg.get("wrap_width", 28),
+            leg.get("wrap_width", 28),
             leg.get("pad_top", 0.5), leg.get("pad_sep_above", 0.4),
             leg.get("pad_sep_below", 0.4), leg.get("gap_slots", 0.5),
             a.get("linewidth_scale_factor", 1.0),

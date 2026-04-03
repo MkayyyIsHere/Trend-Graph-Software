@@ -175,7 +175,8 @@ class ConfigManager:
         }
 
         subplot_params = dict(sp)
-        subplot_params['legend_width_px'] = legend.get('width_px', 500)
+        if 'width_px' in legend:
+            subplot_params['legend_width_px'] = legend['width_px']
 
         return {
             'chart':          chart,

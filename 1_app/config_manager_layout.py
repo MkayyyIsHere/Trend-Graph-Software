@@ -725,9 +725,6 @@ def _aesthetics_card():
             # ── Legend & Subplot ────────────────────────────────────────
             dbc.Row([dbc.Col(html.H6("📦 Legend & Subplot", className="fw-bold text-warning"))]),
             dbc.Row([
-                dbc.Col([dbc.Label("Legend Width (px)", className="small fw-semibold"),
-                         dbc.Input(id="aes-legend-width-px", value=500, type="number",
-                                   min=50, max=2000, step=10, size="sm")], width=2),
                 dbc.Col([dbc.Label("Wrap Width (chars)", className="small fw-semibold"),
                          dbc.Input(id="aes-legend-wrap-w", value=28, type="number",
                                    min=10, max=80, size="sm")], width=2),

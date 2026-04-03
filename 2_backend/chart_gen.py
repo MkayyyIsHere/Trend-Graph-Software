@@ -309,7 +309,8 @@ class CompositeChartGenerator:
                          alpha=gc.get('alpha', 0.25) * 0.5,
                          color=gc.get('color', '#505050'), zorder=0)
 
-        legend_width_px = sp.get('legend_width_px', None)
+        lc = self.config.config.get('legend', {})
+        legend_width_px = lc.get('width_px', sp.get('legend_width_px', None))
         if legend_width_px is not None:
             res = cc.get('resolution_px')
             if res:
@@ -361,14 +362,15 @@ class CompositeChartGenerator:
         leg_ax.set_ylim(0, 1)
         leg_ax.axis('off')
 
-        PAD_TOP       = rc.get('legend_pad_top',       0.5)
-        PAD_SEP_ABOVE = rc.get('legend_pad_sep_above', 0.4)
-        PAD_SEP_BELOW = rc.get('legend_pad_sep_below', 0.4)
-        GAP_SLOTS     = rc.get('legend_gap_slots',     0.5)
+        lc            = self.config.config.get('legend', {})
+        PAD_TOP       = lc.get('pad_top',       rc.get('legend_pad_top',       0.5))
+        PAD_SEP_ABOVE = lc.get('pad_sep_above', rc.get('legend_pad_sep_above', 0.4))
+        PAD_SEP_BELOW = lc.get('pad_sep_below', rc.get('legend_pad_sep_below', 0.4))
+        GAP_SLOTS     = lc.get('gap_slots',     rc.get('legend_gap_slots',     0.5))
         col_tid_w     = 0.30
         col_desc_x    = col_tid_w + 0.04
         pad_x         = 0.03
-        legend_wrap_w = max(10, int((1.0 - col_desc_x - pad_x) / (legend_fs * 0.0012)))
+        legend_wrap_w = lc.get('wrap_width', max(10, int((1.0 - col_desc_x - pad_x) / (legend_fs * 0.0012))))
 
         fp_bold   = FontProperties(family=font_fam, size=legend_fs, weight='bold')
         fp_normal = FontProperties(family=font_fam, size=legend_fs, weight='normal')

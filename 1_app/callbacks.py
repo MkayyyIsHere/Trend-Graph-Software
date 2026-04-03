@@ -816,7 +816,6 @@ def register_callbacks(app, state, temp_dir: str):
         Output('settings-dpi', 'value'),
         Output('settings-font-scale', 'value'),
         Output('settings-lw-scale', 'value'),
-        Output('settings-lgw', 'value'),
         Input('btn-settings', 'n_clicks'),
         Input('btn-settings-cancel', 'n_clicks'),
         Input('btn-settings-apply', 'n_clicks'),
@@ -826,10 +825,9 @@ def register_callbacks(app, state, temp_dir: str):
         State('settings-dpi', 'value'),
         State('settings-font-scale', 'value'),
         State('settings-lw-scale', 'value'),
-        State('settings-lgw', 'value'),
         prevent_initial_call=True,
     )
-    def settings_modal(n_open, n_cancel, n_apply, is_open, w, h, dpi, fs, lws, lgw):
+    def settings_modal(n_open, n_cancel, n_apply, is_open, w, h, dpi, fs, lws):
         trigger = ctx.triggered_id
         cc  = state.config.get_chart_config()
         rc  = state.config.get_responsive_config()
@@ -840,8 +838,7 @@ def register_callbacks(app, state, temp_dir: str):
         cur_h   = int(res[1]) if res else int(cc.get('figure_size', [20, 11])[1] * cur_dpi)
         defaults = (cur_w, cur_h, cur_dpi,
                     rc.get('font_scale_factor', 1.0),
-                    rc.get('linewidth_scale_factor', 1.0),
-                    sp.get('legend_width_px', 500))
+                    rc.get('linewidth_scale_factor', 1.0))
 
         if trigger == 'btn-settings':
             return (True, *defaults)
@@ -854,12 +851,10 @@ def register_callbacks(app, state, temp_dir: str):
                 {'dpi': nd, 'resolution_px': [nw, nh], 'figure_size': [nw / nd, nh / nd]})
             state.config.config.setdefault('responsive', {}).update(
                 {'font_scale_factor': float(fs), 'linewidth_scale_factor': float(lws)})
-            state.config.config.setdefault('subplot_params', {}).update(
-                {'legend_width_px': int(lgw)})
             state.logger.info(f"Settings applied: {nw}×{nh} px @ {nd} DPI")
         except (TypeError, ValueError, ZeroDivisionError) as e:
             state.logger.warning(f"Settings apply error: {e}")
-        return (False, w, h, dpi, fs, lws, lgw)
+        return (False, w, h, dpi, fs, lws)
 
     # ── PPT build ─────────────────────────────────────────────────────────────
     @app.callback(

@@ -136,7 +136,7 @@ def build_plotly_figure(config: ConfigManager,
             type='line',
             x0=task.start_time, x1=task.start_time,
             y0=0, y1=1,
-            xref='x', yref='paper',
+            xref='x', yref='y domain',
             line=dict(color=edge_rgba, width=1),
             layer='below',
         )
@@ -145,7 +145,7 @@ def build_plotly_figure(config: ConfigManager,
             type='line',
             x0=task.end_time, x1=task.end_time,
             y0=0, y1=1,
-            xref='x', yref='paper',
+            xref='x', yref='y domain',
             line=dict(color=edge_rgba, width=1),
             layer='below',
         )
@@ -309,13 +309,42 @@ def build_plotly_figure(config: ConfigManager,
         if all_ts:
             x_range = [min(all_ts), max(all_ts)]
 
+    sp = config.get_subplot_params()
+
+    # Convert subplot_params fractions to Plotly pixel margins when dimensions
+    # are known (batch export). Fall back to sensible defaults for browser preview.
+    _right  = sp.get('right',  0.75)
+    _left   = sp.get('left',   0.03)
+    _top    = sp.get('top',    0.95)
+    _bottom = sp.get('bottom', 0.06)
+    leg_x   = sp.get('legend_x', _right + 0.01)
+    leg_y   = sp.get('legend_y', 1.0)
+
+    # Fixed small margins — layout controlled via xaxis/yaxis domain
+    # mar_t scales with how much space is above the plot for the title
+    _gap_top = 1.0 - _top
+    mar_t = max(50, int(_gap_top * 600))  # at least 50px, grows with gap
+    mar_l, mar_r, mar_b = 80, 20, 80
+
+    # Legend annotation width from unused right fraction
+    _fig_w = width if width else 1200
+    legend_w_px = max(200, int((1.0 - _right) * _fig_w) - 60)
+
+    import sys
+    print(f'[DEBUG] right={_right} leg_x={leg_x} legend_w_px={legend_w_px}', file=sys.stderr, flush=True)
+
     fig.update_layout(
         title=dict(
             text=cc.get('title', 'Data Over Time with Events'),
             font=dict(size=title_fs, family=font_family),
             x=0.5,
+            y=min(0.99, _top + _gap_top * 0.5),
+            xref='paper',
+            yref='paper',
+            automargin=True,
         ),
         xaxis=dict(
+            domain=[_left, _right],
             title=dict(text=ac.get('x_label', 'Date & Time'),
                        font=dict(size=label_fs_ax, family=font_family)),
             range=x_range,
@@ -332,6 +361,7 @@ def build_plotly_figure(config: ConfigManager,
                        tickcolor=f'rgba({_gr},{_gg},{_gb},{grid_alpha * 0.7:.2f})'),
         ),
         yaxis=dict(
+            domain=[_bottom, _top],
             title=dict(text=ac.get('y_label', 'Value'),
                        font=dict(size=label_fs_ax, family=font_family)),
             range=y_range,
@@ -345,15 +375,15 @@ def build_plotly_figure(config: ConfigManager,
         showlegend=True,
         legend=dict(
             orientation='v',
-            x=1.02, xanchor='left',
-            y=1.0,  yanchor='top',
+            x=leg_x, xanchor='left',
+            y=leg_y, yanchor='top',
             bgcolor='rgba(255,255,255,0.9)',
             bordercolor='rgba(0,0,0,0)',
             borderwidth=0,
             font=dict(size=label_fs, family=font_family),
             title=dict(text=''),
         ),
-        margin=dict(l=70, r=320, t=70, b=80),
+        margin=dict(l=mar_l, r=mar_r, t=mar_t, b=mar_b),
         # When explicit pixel dims are provided (batch export): fix the size
         # so kaleido renders at exactly the right resolution.
         # When no dims given (browser preview): autosize=True so the figure
@@ -364,10 +394,10 @@ def build_plotly_figure(config: ConfigManager,
 
     # ── Right-side legend table (mirrors matplotlib _create_legend) ───────────
     #
-    # All sizing values come from config (aesthetics.json → per-chart merge).
+    # All sizing values come from config (aesthetics.json -> per-chart merge).
     #
     wrap_w      = rc.get('legend_wrap_width', 28)
-    legend_w_px = config.get_subplot_params().get('legend_width_px', 500)
+    # legend_w_px already computed above
     all_configs = config.get_all_series_configs()
 
     lines_html = []
@@ -405,7 +435,7 @@ def build_plotly_figure(config: ConfigManager,
     legend_text = '<br>'.join(lines_html)
 
     fig.add_annotation(
-        x=1.02, y=1.0,
+        x=leg_x, y=leg_y,
         xref='paper', yref='paper',
         xanchor='left', yanchor='top',
         text=legend_text,

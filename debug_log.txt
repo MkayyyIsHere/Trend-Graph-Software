@@ -1,0 +1,1260 @@
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
+============================================================
+frozen      : False
+sys.executable : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python.exe
+__file__    : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\main.py
+_ROOT       : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\1_app  exists=True
+    → registered as 'app'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\2_backend  exists=True
+    → registered as 'backend'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\3_utils  exists=True
+    → registered as 'utils'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\4_assets  exists=True
+    → registered as 'assets'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\5_configs  exists=True
+    → registered as 'configs'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\6_templates  exists=True
+    → registered as 'templates'
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\7_samples  exists=True
+    → registered as 'samples'
+sys.path entries:
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Scripts\python314.zip
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\DLLs
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64\Lib
+  C:\Users\liewmh\AppData\Local\Python\pythoncore-3.14-64
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv
+  C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software\.venv\Lib\site-packages
+SUCCESS: imported utils.constants
+SUCCESS: imported app.dash_app
