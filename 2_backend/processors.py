@@ -94,8 +94,6 @@ class SeriesDataProcessor:
                     value_str = str(row[self._resolved_value_col]).strip()
                     if not start_str or start_str.lower() == 'nan':
                         continue
-                    if not value_str or value_str.lower() == 'nan':
-                        continue
                     timestamp = None
                     if ts_fmt:
                         try:
@@ -109,11 +107,17 @@ class SeriesDataProcessor:
                         else:
                             self._log(f"Row {row_num}: Could not parse timestamp '{start_str}'", 'WARNING')
                             continue
+
+                    if not value_str or value_str.lower() == 'nan':
+                        # NaN rows are skipped — gaps in the line match Fluke behaviour
+                        continue
+
                     try:
                         value = float(value_str)
                     except ValueError:
                         self._log(f"Row {row_num}: Could not parse value '{value_str}'", 'WARNING')
                         continue
+
                     self.data_points.append(DataPoint(timestamp, value))
                 except Exception as e:
                     self._log(f"Row {row_num}: Unexpected error - {e}", 'ERROR')

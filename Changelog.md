@@ -17,3 +17,12 @@ Format: version — date — what changed
 - Update on asethetics guide
 - Updated new config file
 - Fix Config Editor (min y, max y)
+
+## [1.0.3] - 2026-05-11
+- Updated on PF plottings
+
+## [1.0.4] - 2026-05-26
+- Final Update on PF plots
+
+## [1.0.5] - 2026-05-28
+- Update on Y-axis appearance

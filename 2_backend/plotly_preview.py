@@ -2,6 +2,7 @@
 # PLOTLY PREVIEW BUILDER  (faithful translation of the Matplotlib chart)
 # =============================================================================
 
+import math
 import textwrap as _textwrap
 from typing import Dict, List, Tuple
 
@@ -17,6 +18,31 @@ def _hex_to_rgba(hex_color: str, alpha: float) -> str:
     h = hex_color.lstrip('#')
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     return f'rgba({r},{g},{b},{alpha})'
+
+
+def _nice_interval(span: float, target_count: int = 6) -> float:
+    """Return a 'nice' tick interval for *span* targeting ~target_count major ticks.
+
+    Rounds *span / target_count* up to the nearest value in {1, 2, 2.5, 5} × 10^n
+    so that tick labels fall on clean round numbers.
+    """
+    import math
+    if span <= 0 or target_count <= 0:
+        return 1.0
+    raw = span / target_count
+    mag = 10 ** math.floor(math.log10(abs(raw)))
+    n = raw / mag
+    if n < 1.5:
+        nice = 1.0
+    elif n < 2.25:
+        nice = 2.0
+    elif n < 3.5:
+        nice = 2.5
+    elif n < 7.5:
+        nice = 5.0
+    else:
+        nice = 10.0
+    return nice * mag
 
 
 def build_plotly_figure(config: ConfigManager,
@@ -47,13 +73,25 @@ def build_plotly_figure(config: ConfigManager,
     y_min_cfg = ac.get('y_min')
     y_max_cfg = ac.get('y_max')
     flat_points: List[DataPoint] = [dp for pts in all_series_data for dp in pts]
+
+    # Actual data extent — used for label placement regardless of axis limits.
+    # Respect per-series abs_value flag so placement matches what is plotted.
+    if flat_points:
+        abs_flags = {i: sc.get('abs_value', False) for i, sc in enumerate(all_cfg)}
+        vals = []
+        for idx, data_points in enumerate(all_series_data):
+            use_abs = abs_flags.get(idx, False)
+            for dp in data_points:
+                vals.append(abs(dp.value) if use_abs else dp.value)
+        actual_data_min, actual_data_max = min(vals), max(vals)
+    else:
+        actual_data_min, actual_data_max = 0.0, 1.0
+
+    # Axis display range — honours config limits when set
     if y_min_cfg is not None and y_max_cfg is not None:
         data_min, data_max = float(y_min_cfg), float(y_max_cfg)
-    elif flat_points:
-        vals = [dp.value for dp in flat_points]
-        data_min, data_max = min(vals), max(vals)
     else:
-        data_min, data_max = 0.0, 1.0
+        data_min, data_max = actual_data_min, actual_data_max
     data_range = data_max - data_min or 1.0
 
     # ── Series lines ─────────────────────────────────────────────────────────
@@ -75,11 +113,13 @@ def build_plotly_figure(config: ConfigManager,
         if seg:
             segments.append(seg)
 
+        use_abs = sc.get('abs_value', False)
         first = True
         for segment in segments:
+            values = [abs(dp.value) if use_abs else dp.value for dp in segment]
             fig.add_trace(go.Scatter(
                 x=[dp.timestamp for dp in segment],
-                y=[dp.value     for dp in segment],
+                y=values,
                 mode='lines',
                 name=name if first else None,
                 showlegend=first,
@@ -158,10 +198,13 @@ def build_plotly_figure(config: ConfigManager,
     #
     label_fs   = rc.get('legend_fontsize_base', 13) * rc.get('font_scale_factor', 1.0)
     # Estimate row height as a fraction of data range (same cap logic as mpl)
-    _t         = max(0.0, min(1.0, (data_range - 1.0) / (5000.0 - 1.0)))
+    # Use actual data range (not axis limits) so labels aren't clipped
+    actual_data_range = actual_data_max - actual_data_min or 1.0
+    _t         = max(0.0, min(1.0, (actual_data_range - 1.0) / (5000.0 - 1.0)))
     cap_pct    = 0.06 * (1 - _t) + 0.03 * _t
     row_step   = data_range * cap_pct
 
+    # Place labels near top of the axis display range (not just data max)
     base_y     = data_max - data_range * 0.03
 
     # Estimate character width in seconds to detect X overlaps
@@ -294,7 +337,23 @@ def build_plotly_figure(config: ConfigManager,
         y_range = [float(y_min_cfg), float(y_max_cfg)]
     elif flat_points:
         pad = data_range * 0.05
+        # Preserve sign: pad both ends symmetrically so negative values stay visible
         y_range = [data_min - pad, data_max + pad]
+
+    # ── Y-axis fine tick interval (4 subdivisions per major tick, all labelled) ─
+    # Plotly does not support different font sizes per tick natively, so all
+    # labelled ticks appear at the same size in the live preview.  The batch
+    # export (chart_gen.py) applies proper 75 % / #808080 minor-label styling.
+    y_dtick = None
+    y_minor_dtick = None
+    if y_range is not None:
+        _y_span = float(y_range[1]) - float(y_range[0])
+        if _y_span > 0:
+            _y_major_iv = ac.get('y_major_interval')
+            _major_iv = float(_y_major_iv) if _y_major_iv is not None \
+                        else _nice_interval(_y_span)
+            y_dtick       = _major_iv / 2.0   # labelled ticks: major + midpoint
+            y_minor_dtick = _major_iv / 4.0   # tick marks at ¼ and ¾ — no labels
 
     # Always compute x_range from config or full data extent so Live Preview
     # shows the same axis span as the exported image (autosize only affects
@@ -330,9 +389,6 @@ def build_plotly_figure(config: ConfigManager,
     _fig_w = width if width else 1200
     legend_w_px = max(200, int((1.0 - _right) * _fig_w) - 60)
 
-    import sys
-    print(f'[DEBUG] right={_right} leg_x={leg_x} legend_w_px={legend_w_px}', file=sys.stderr, flush=True)
-
     fig.update_layout(
         title=dict(
             text=cc.get('title', 'Data Over Time with Events'),
@@ -353,11 +409,15 @@ def build_plotly_figure(config: ConfigManager,
             gridcolor=grid_rgba,
             tickfont=dict(size=tick_fs, family=font_family),
             tickformat='%H:%M<br>%b %d',
+            tickmode='linear',
+            dtick=1800000,              # major tick every 30 minutes (ms)
+            tick0='2000-01-01 00:00:00',
             showspikes=True, spikemode='across', spikesnap='cursor',
             spikedash='solid', spikecolor='gray', spikethickness=1,
             showline=True, linecolor=grid_rgba, linewidth=1.5,
             ticks='outside', ticklen=6, tickwidth=1, tickcolor=grid_rgba,
             minor=dict(ticks='outside', ticklen=3, tickwidth=0.7,
+                       dtick=600000,   # minor tick every 10 minutes (ms)
                        tickcolor=f'rgba({_gr},{_gg},{_gb},{grid_alpha * 0.7:.2f})'),
         ),
         yaxis=dict(
@@ -368,6 +428,14 @@ def build_plotly_figure(config: ConfigManager,
             showgrid=gc.get('visible', True),
             gridcolor=grid_rgba,
             tickfont=dict(size=tick_fs, family=font_family),
+            showline=True, linecolor=grid_rgba, linewidth=1.5,
+            ticks='outside', ticklen=6, tickwidth=1, tickcolor=grid_rgba,
+            # Labels at major + midpoint; ¼ and ¾ positions are tick-mark-only.
+            # minor.dtick is intentionally omitted here — it works in the browser
+            # but is silently ignored by kaleido for linear/numeric axes.
+            # Minor tick marks are drawn as explicit shapes below (works everywhere).
+            **({'tickmode': 'linear', 'dtick': y_dtick, 'tick0': 0}
+               if y_dtick is not None else {}),
         ),
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
@@ -391,6 +459,42 @@ def build_plotly_figure(config: ConfigManager,
         **(dict(width=width, height=height, autosize=False)
            if width and height else dict(autosize=True)),
     )
+
+    # ── Y-axis minor tick marks (explicit shapes) ────────────────────────────
+    # Plotly's minor.dtick works in the browser but is silently dropped by
+    # kaleido (the PNG export engine) on linear/numeric axes.  Drawing them
+    # as paper-coordinate shapes is reliable in both environments.
+    #
+    # Pattern (matches chart_gen.py Matplotlib output):
+    #   MAJOR label | ¼ spike | ½ label | ¾ spike | MAJOR label
+    if y_minor_dtick is not None and y_dtick is not None and y_range is not None:
+        _minor_tick_color = f'rgba({_gr},{_gg},{_gb},{grid_alpha * 0.7:.2f})'
+        # Convert 3-pixel tick length to a paper-x fraction so it scales
+        # correctly at any export resolution.
+        _tick_px   = 3
+        _tick_frac = _tick_px / max(1, _fig_w)
+        _tol       = y_minor_dtick * 0.001
+
+        # Start one step before range to catch positions clipped by y_range[0]
+        _pos = math.floor(y_range[0] / y_minor_dtick) * y_minor_dtick
+        while _pos <= y_range[1] + _tol:
+            # Skip positions that coincide with a labeled (major/midpoint) tick
+            _rem = _pos % y_dtick
+            if _rem < 0:
+                _rem += y_dtick
+            _is_labeled = _rem < _tol or abs(_rem - y_dtick) < _tol
+
+            if not _is_labeled and (y_range[0] - _tol) <= _pos <= (y_range[1] + _tol):
+                fig.add_shape(
+                    type='line',
+                    # Extends 3 px to the LEFT of the y-axis spine (paper coords)
+                    x0=_left - _tick_frac, x1=_left,
+                    y0=_pos,              y1=_pos,
+                    xref='paper', yref='y',
+                    line=dict(color=_minor_tick_color, width=0.7),
+                    layer='above',
+                )
+            _pos = round(_pos + y_minor_dtick, 10)  # round avoids float drift
 
     # ── Right-side legend table (mirrors matplotlib _create_legend) ───────────
     #
@@ -433,6 +537,9 @@ def build_plotly_figure(config: ConfigManager,
         )
 
     legend_text = '<br>'.join(lines_html)
+
+    _fig_w = width if width else 1200
+    legend_w_px = max(200, int((1.0 - _right) * _fig_w) - 60)
 
     fig.add_annotation(
         x=leg_x, y=leg_y,

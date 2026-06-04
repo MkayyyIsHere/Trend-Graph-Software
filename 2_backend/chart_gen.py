@@ -102,10 +102,12 @@ class CompositeChartGenerator:
                 seg.append(dp)
             if seg:
                 segments.append(seg)
+            use_abs = sc.get('abs_value', False)
             for i, segment in enumerate(segments):
+                values = [abs(dp.value) if use_abs else dp.value for dp in segment]
                 self.ax.plot(
                     [dp.timestamp for dp in segment],
-                    [dp.value     for dp in segment],
+                    values,
                     color=color, linewidth=linewidth, linestyle=linestyle,
                     alpha=alpha, label=name if i == 0 else '',
                     marker='', markersize=0, zorder=3)
@@ -148,11 +150,24 @@ class CompositeChartGenerator:
         axis_cfg  = self.config.get_axis_config()
         y_min_cfg = axis_cfg.get('y_min', None)
         y_max_cfg = axis_cfg.get('y_max', None)
+        # Use actual data extent for label placement so Gantt labels sit near
+        # the top of the real data, not at a fixed axis ceiling that may be
+        # far above or below the data (e.g. PF data is negative but y_max=1.5).
+        # Respect per-series abs_value flag so placement matches plotted values.
+        all_cfgs_gantt = self.config.get_all_series_configs()
+        vals = []
+        for i, dp in enumerate(data_points):
+            # data_points here is a flat list; match to series via all_series passed to generate()
+            vals.append(dp.value)
+        # Apply abs for any series that has abs_value=True
+        if any(sc.get('abs_value', False) for sc in all_cfgs_gantt):
+            vals = [abs(v) for v in vals]
+        actual_data_min, actual_data_max = min(vals), max(vals)
+        # Axis display range (for bar height calculation)
         if y_min_cfg is not None and y_max_cfg is not None:
             data_min, data_max = float(y_min_cfg), float(y_max_cfg)
         else:
-            vals = [dp.value for dp in data_points]
-            data_min, data_max = min(vals), max(vals)
+            data_min, data_max = actual_data_min, actual_data_max
         data_range = data_max - data_min
         gantt_cfg  = self.gantt_config.get_gantt_config()
         bar_alpha  = gantt_cfg.get('bar_alpha', 0.25)
@@ -188,7 +203,7 @@ class CompositeChartGenerator:
         # Place all probes, measure in one batch, then remove them.
         probes = []
         for td in task_data:
-            p = self.ax.text(td['sn'], data_max, td['task'].display_id,
+            p = self.ax.text(td['sn'], actual_data_max, td['task'].display_id,
                              fontsize=label_fs, fontweight='bold', alpha=0)
             probes.append(p)
 
@@ -203,7 +218,8 @@ class CompositeChartGenerator:
         for td, txt_h in zip(task_data, txt_heights):
             sn, en, color = td['sn'], td['en'], td['color']
 
-            label_y  = data_max
+            # Start labels at actual data top (not axis ceiling)
+            label_y  = actual_data_max
             max_tries = 50
             step     = txt_h * 1.1
             px0, px1 = sn, en
@@ -253,17 +269,18 @@ class CompositeChartGenerator:
                       fontsize=title_fs, fontweight='bold', ha='center', va='top',
                       transform=self.fig.transFigure)
 
-        self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%I:%M %p\n%b %d'))
-        self.ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        self.ax.xaxis.set_minor_locator(mdates.HourLocator())
-        self.fig.text(0.5, 0.01, ac.get('x_label', 'Date & Time'),
-                      fontsize=label_fs, fontweight='bold', ha='center', va='bottom',
-                      transform=self.fig.transFigure)
+        self.ax.xaxis.set_major_locator(mdates.MinuteLocator(byminute=[0, 30]))
+        self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M\n%b %d'))
+        self.ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute=[10, 20, 40, 50]))
+        self.ax.set_xlabel(ac.get('x_label', 'Date & Time'),
+                           fontsize=label_fs, fontweight='bold', labelpad=8)
         self.ax.set_ylabel(ac.get('y_label', 'Value'), fontsize=label_fs, fontweight='bold')
 
-        if (ymi := ac.get('y_major_interval')) is not None:
-            self.ax.yaxis.set_major_locator(ticker.MultipleLocator(ymi))
-        self.ax.yaxis.set_minor_locator(ticker.AutoMinorLocator(2))
+        # ── Y axis: major locator + limits (set limits first so the auto-locator
+        #    has the correct view interval before we query it for minor ticks) ──
+        _ymi_cfg = ac.get('y_major_interval')
+        if _ymi_cfg is not None:
+            self.ax.yaxis.set_major_locator(ticker.MultipleLocator(float(_ymi_cfg)))
 
         y_min, y_max = ac.get('y_min'), ac.get('y_max')
         if y_min is not None and y_max is not None:
@@ -272,6 +289,32 @@ class CompositeChartGenerator:
             self.ax.set_ylim(bottom=y_min)
         elif y_max is not None:
             self.ax.set_ylim(top=y_max)
+
+        # ── Y minor ticks: 4 subdivisions ─────────────────────────────────────
+        # Pattern per major interval (_eff_major):
+        #   MAJOR (bold label)  |  ¼ tick only  |  ½ label  |  ¾ tick only  |  MAJOR
+        if _ymi_cfg is not None:
+            _eff_major = float(_ymi_cfg)
+        else:
+            # Query the auto-locator now that ylim / data limits are in place
+            _ml = sorted(self.ax.yaxis.get_major_locator()())
+            _eff_major = float(_ml[1] - _ml[0]) if len(_ml) >= 2 else None
+
+        if _eff_major is not None:
+            _half = _eff_major / 2.0
+
+            def _semi_label(x, pos, _m=_eff_major, _h=_half):
+                """Return value string only at the midpoint (½ major); empty at ¼ and ¾."""
+                rem = x % _m
+                if rem < 0:
+                    rem += _m
+                return f'{x:g}' if abs(rem - _h) < _m * 0.001 else ''
+
+            self.ax.yaxis.set_minor_locator(ticker.MultipleLocator(_eff_major / 4))
+            self.ax.yaxis.set_minor_formatter(ticker.FuncFormatter(_semi_label))
+        else:
+            # Fallback when interval is indeterminate — tick marks only, no labels
+            self.ax.yaxis.set_minor_locator(ticker.AutoMinorLocator(4))
 
         x_min_cfg, x_max_cfg = ac.get('x_min'), ac.get('x_max')
         if x_min_cfg and x_max_cfg:
@@ -294,10 +337,14 @@ class CompositeChartGenerator:
         self.ax.tick_params(axis='x', which='major', length=6, width=1.0, direction='out')
         self.ax.tick_params(axis='x', which='minor', length=3, width=0.7, direction='out')
         self.ax.tick_params(axis='y', which='major', labelsize=tick_fs, length=6, width=1.0, direction='out')
-        self.ax.tick_params(axis='y', which='minor', length=3, width=0.7, direction='out')
+        self.ax.tick_params(axis='y', which='minor', labelsize=tick_fs * 0.75,
+                            length=3, width=0.7, direction='out', labelcolor='#808080')
 
-        for spine in ['left', 'right', 'top']:
+        for spine in ['right', 'top']:
             self.ax.spines[spine].set_visible(False)
+        # Left spine visible so minor Y tick marks are clearly anchored (mirrors x-axis)
+        self.ax.spines['left'].set_linewidth(1.0)
+        self.ax.spines['left'].set_color(gc.get('color', '#505050'))
 
         if gc.get('visible', True):
             grid_kw = dict(linestyle=gc.get('linestyle', '-'),
@@ -335,6 +382,9 @@ class CompositeChartGenerator:
         gl = self.ax.get_ygridlines()
         if gl:
             gl[0].set_visible(False)
+        # Bold major Y-axis labels (applied after draw so Text objects are instantiated)
+        for lbl in self.ax.yaxis.get_majorticklabels():
+            lbl.set_fontweight('bold')
 
         self._create_legend(tasks)
 

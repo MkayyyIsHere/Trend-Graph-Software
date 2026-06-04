@@ -1,5 +1,5 @@
 Project Structure
-Generated : 2026-04-03 16:45:31
+Generated : 2026-05-17 23:44:50
 Root      : C:\Users\liewmh\Desktop\Digital Journal\400 Work Stuff\Trend Graph Software
 ============================================================
 Trend Graph Software/
@@ -31,16 +31,17 @@ Trend Graph Software/
 │   └── log_colors.css
 ├── 5_configs/
 │   ├── charts/
-│   │   ├── 1_config_composite_Power Factor.json
-│   │   ├── 2_config_composite_Voltage.json
-│   │   ├── 3_confcomposite_Current.json
-│   │   ├── 5_config_composite_Frequency.json
-│   │   ├── 6_config_composite_THD Voltage.json
 │   │   ├── Active_Power.json
 │   │   ├── aesthetics.json
-│   │   └── batch_profile.json
+│   │   ├── batch_profile.json
+│   │   ├── Current.json
+│   │   ├── Frequency.json
+│   │   ├── Power Factor.json
+│   │   ├── THD Voltage.json
+│   │   └── Voltage.json
 │   └── events/
-│       └── config_composite_gantt.json
+│       ├── config_composite_gantt.json
+│       └── JDC2.2_DAY4 Events.json
 ├── 6_templates/
 │   ├── output.pptx
 │   └── PQA_Template.pptx
@@ -50,18 +51,62 @@ Trend Graph Software/
 │   ├── events/
 │   │   └── sample_events_day_4.csv
 │   └── output_images/
-│       ├── Obsulte/
-│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__2_config_composite_Voltage.png
-│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__5_config_composite_Frequency.png
-│       │   └── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
-│       ├── UPS-15-ISOTX-C1-IST-DAY4__2_config_composite_Voltage.png
-│       ├── UPS-15-ISOTX-C1-IST-DAY4__5_config_composite_Frequency.png
-│       └── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
+│       ├── Archived/
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__Current.png
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__Frequency.png
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__Power_Factor.png
+│       │   ├── UPS-15-ISOTX-C1-IST-DAY4__THD_Voltage.png
+│       │   └── UPS-15-ISOTX-C1-IST-DAY4__Voltage.png
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__Active_Power.png
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__Current.png
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__Frequency.png
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__Power_Factor.png
+│       ├── UPS-15-ISOTX-C1-IST-DAY4__THD_Voltage.png
+│       └── UPS-15-ISOTX-C1-IST-DAY4__Voltage.png
 ├── 8_dist/
-│   ├── Obsolute/
-│   │   └── TrendGraph_v1.0.0.exe
+│   ├── Archived/
+│   │   ├── Trend Graph Software - Elec/
+│   │   │   ├── 5_configs/
+│   │   │   │   ├── charts/
+│   │   │   │   │   ├── Active_Power.json
+│   │   │   │   │   ├── aesthetics.json
+│   │   │   │   │   ├── batch_profile.json
+│   │   │   │   │   ├── Current.json
+│   │   │   │   │   ├── Frequency.json
+│   │   │   │   │   ├── Power Factor.json
+│   │   │   │   │   ├── THD Voltage.json
+│   │   │   │   │   └── Voltage.json
+│   │   │   │   └── events/
+│   │   │   │       └── config_composite_gantt.json
+│   │   │   ├── 6_templates/
+│   │   │   │   ├── output.pptx
+│   │   │   │   └── PQA_Template.pptx
+│   │   │   └── TrendGraph_v1.0.2.exe
+│   │   ├── TrendGraph_v1.0.0.exe
+│   │   ├── TrendGraph_v1.0.1.exe
+│   │   ├── TrendGraph_v1.0.2.exe
+│   │   └── TrendGraph_v1.0.3.exe
+│   ├── User Manual/
+│   │   ├── images/
+│   │   │   ├── batch_profile.png
+│   │   │   ├── batch_progres.png
+│   │   │   ├── chart_preview.png
+│   │   │   ├── chart_selection.png
+│   │   │   ├── config_edit.png
+│   │   │   ├── config_manager_config_editor.png
+│   │   │   ├── data_upload.png
+│   │   │   ├── done_ppt_build.png
+│   │   │   ├── events_upload.png
+│   │   │   ├── export_as_png.png
+│   │   │   ├── folder_picker_dialog.png
+│   │   │   ├── folder_structure.png
+│   │   │   ├── generate_chart.png
+│   │   │   ├── main_page.png
+│   │   │   └── ppt_builder.png
+│   │   └── USER_MANUAL.md
 │   ├── debug_log.txt
-│   └── TrendGraph_v1.0.1.exe
+│   └── TrendGraph_v1.0.3.exe
 ├── Aesthetics guide.md
 ├── build.py
 ├── Changelog.md
@@ -73,4 +118,4 @@ Trend Graph Software/
 ├── scan_project.py
 └── Version.txt
 
-Total entries: 69
+Total entries: 114

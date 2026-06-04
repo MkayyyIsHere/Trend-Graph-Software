@@ -34,3 +34,5 @@ desktop.ini
 # ── Secrets / local config ───────────────────────────────────────
 .env
 *.env.local
+
+User Manual/

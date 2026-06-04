@@ -3,7 +3,7 @@
   "_usage": "Loaded automatically before any per-chart config. Per-chart JSONs may override fields here, but a WARNING will be logged.",
   "font": {
     "family": "Calibri",
-    "title_size": 32,
+    "title_size": 36,
     "axis_label_size": 24,
     "tick_size": 18,
     "legend_size": 20,
