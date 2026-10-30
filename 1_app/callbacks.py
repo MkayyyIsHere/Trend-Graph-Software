@@ -12,8 +12,10 @@ from dash import Input, Output, State, dash_table, ctx, html, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, RESOLUTION_PRESETS, RESERVED_CONFIG_FILENAMES
-from backend.processors import SeriesDataProcessor, EventDataProcessor
+from utils.constants import (DEFAULT_DPI, DEFAULT_FIGURE_SIZE, RESOLUTION_PRESETS,
+                             RESERVED_CONFIG_FILENAMES, load_settings)
+from backend.processors import EventDataProcessor
+from backend.formats import ChartSkipped, DataFileError, load_chart_data
 from backend.plotly_preview import build_plotly_figure
 from backend.batch_worker import run_batch as _run_batch_worker
 from backend.ppt_builder import PPTBuilder
@@ -59,6 +61,7 @@ def _main_log_class(line):
 
 def _batch_log_class(line):
     if '✓' in line:                                                  return 'log-info'
+    if '↷' in line:                                                  return 'log-warning'
     if '✗' in line or 'ERROR' in line or 'FAILED' in line or 'ABORTED' in line: return 'log-error'
     if 'WARNING' in line or 'SKIPPED' in line or '⚠' in line:       return 'log-warning'
     if '=' * 10 in line or 'BATCH' in line:                          return 'log-debug'
@@ -427,27 +430,24 @@ def register_callbacks(app, state, temp_dir: str):
         state.logger.info("=" * 50)
         state.logger.info("Starting chart generation…")
 
-        all_data_points, series_summaries = [], []
-        for i, sc in enumerate(state.config.get_all_series_configs()):
-            proc = SeriesDataProcessor(
-                logger=state.logger,
-                value_column=sc.get('value_column'),
-                value_column_keywords=sc.get('value_column_keywords', ['value']),
-            )
-            if not proc.load_data(series_path):
-                msg = f"Failed to load data for series '{sc.get('name', i)}'"
-                state.logger.error(msg)
-                return (dbc.Alert(msg, color="danger"), *_fail)
-            all_data_points.append(proc.get_data_points())
-            s  = proc.get_summary()
-            tr, vr = s['time_range'], s['value_range']
+        # Reload so a metric-based config starts from its style slots again.
+        state.config.reload(state.config.config_path)
+        try:
+            all_data_points = load_chart_data(
+                state.config, series_path, load_settings().get('wz_system', '3P4W'))
+        except (ChartSkipped, DataFileError) as e:
+            state.logger.error(f"Data load: {e}")
+            return (dbc.Alert(f"Cannot draw this chart from that file: {e}", color="danger"), *_fail)
+        series_summaries = []
+        for sc, pts in zip(state.config.get_all_series_configs(), all_data_points):
+            vals = [dp.value for dp in pts]
             series_summaries.append({
-                'Series':    sc.get('name', f'Series {i+1}'),
-                'Points':    s['total_points'],
-                'Start':     str(tr[0]) if tr[0] else '—',
-                'End':       str(tr[1]) if tr[1] else '—',
-                'Value Min': f"{vr[0]:.4f}" if vr[0] is not None else '—',
-                'Value Max': f"{vr[1]:.4f}" if vr[1] is not None else '—',
+                'Series':    f"{sc.get('name')} ({sc.get('value_column', '')})",
+                'Points':    len(pts),
+                'Start':     str(pts[0].timestamp) if pts else '—',
+                'End':       str(pts[-1].timestamp) if pts else '—',
+                'Value Min': f"{min(vals):.4f}" if vals else '—',
+                'Value Max': f"{max(vals):.4f}" if vals else '—',
             })
 
         event_proc = EventDataProcessor(logger=state.logger)
@@ -722,7 +722,8 @@ def register_callbacks(app, state, temp_dir: str):
             args=(config_files, data_files, event_path, out_folder, total, n_workers,
                   state.logger, state.gantt_config, state.batch_log,
                   state.batch_stop_event, _done, override_chart),
-            kwargs={'aesthetics_path': aesthetics_path},
+            kwargs={'aesthetics_path': aesthetics_path,
+                    'system': load_settings().get('wz_system', '3P4W')},
             daemon=True,
         ).start()
 
@@ -752,7 +753,8 @@ def register_callbacks(app, state, temp_dir: str):
         estop_label = "⏹ Stopping…" if (still_run and stopped) else "⏹ E-Stop"
 
         # Parse progress from log — count "✓" and "✗" completion lines
-        done_count  = sum(1 for line in state.batch_log if '] ✓' in line or '] ✗' in line)
+        done_count  = sum(1 for line in state.batch_log
+                          if '] ✓' in line or '] ✗' in line or '] ↷' in line)
         # Extract total from the BATCH STARTED line
         total_count = 0
         for line in state.batch_log:

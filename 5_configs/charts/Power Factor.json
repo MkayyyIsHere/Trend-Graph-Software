@@ -1,13 +1,11 @@
 {
   "_description": "Config for plotting 3-Phase Power Factor over time with Gantt events overlay.",
   "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics (fonts, resolution, grid, legend) are inherited from aesthetics.json.",
+  "_metric_help": "'metric' picks the columns for the export brand and wiring (see 2_backend/formats.py). Series entries are style slots in phase order (A, B, C, then N); names are set from the data.",
+  "metric": "power_factor",
   "series": [
     {
       "name": "PF Avg A",
-      "value_column": "PfFwdRev_A_avg",
-      "value_column_keywords": [
-        "pffwdrev_a_avg"
-      ],
       "line_color": "#000000",
       "linewidth": 1.5,
       "linestyle": "-",
@@ -17,10 +15,6 @@
     },
     {
       "name": "PF Avg B",
-      "value_column": "PfFwdRev_B_avg",
-      "value_column_keywords": [
-        "pffwdrev_b_avg"
-      ],
       "line_color": "#d62728",
       "linewidth": 1.5,
       "linestyle": "-",
@@ -30,10 +24,6 @@
     },
     {
       "name": "PF Avg C",
-      "value_column": "PfFwdRev_C_avg",
-      "value_column_keywords": [
-        "pffwdrev_c_avg"
-      ],
       "line_color": "#1f77b4",
       "linewidth": 1.5,
       "linestyle": "-",

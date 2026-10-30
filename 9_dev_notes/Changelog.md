@@ -40,3 +40,14 @@ Format: version — date — what changed
 - Advanced batch also derives the plot window from the schedule when a chart has no x_min/x_max
 - X-axis tick spacing adapts to the window length (15 min … 6 h)
 - Warning when a data file has no samples inside the plot window
+- Hioki support (PQ3198-style CSV: Date+Time columns, BOM, 1E+00 numbers, OVER/----- as gaps)
+  alongside Fluke; brand shown per file in the Quick Run tab
+- System wiring choice (3P4W with N / 3P3W without N): voltage & THD show L-N or L-L accordingly;
+  Hioki U1–U3 vs U12/U23/U31 are always labelled correctly
+- Charts now pick columns by measurement ("metric") instead of fixed column names
+- Neutral current line added to the Current chart when the export has one
+- Power / PF charts are skipped with a note for exports that only have totals
+- FIX: Current chart was plotting the same (last) column three times on Fluke exports
+- FIX: Active Power chart plotted a current column on Fluke exports without PowerPfund;
+  it now uses PowerP (total active power) for every Fluke export
+- Data files are parsed once per run and vectorised (~0.1–0.5 s per file instead of ~10 s × 18)

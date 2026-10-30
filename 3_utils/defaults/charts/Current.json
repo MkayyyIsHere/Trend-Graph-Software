@@ -1,15 +1,11 @@
 {
   "_description": "Config for plotting 3-Phase Current over time with Gantt events overlay.",
   "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics inherited from aesthetics.json.",
+  "_metric_help": "'metric' picks the columns for the export brand and wiring (see 2_backend/formats.py). Series entries are style slots in phase order (A, B, C, then N); names are set from the data.",
+  "metric": "current",
   "series": [
     {
       "name": "Irms AB",
-      "value_column": "Irms_AB_avg",
-      "value_column_keywords": [
-        "irms_ab",
-        "current_ab",
-        "iab"
-      ],
       "line_color": "#E69F00",
       "linewidth": 2.2,
       "linestyle": "-",
@@ -18,12 +14,6 @@
     },
     {
       "name": "Irms BC",
-      "value_column": "Irms_BC_avg",
-      "value_column_keywords": [
-        "irms_bc",
-        "current_bc",
-        "ibc"
-      ],
       "line_color": "#56B4E9",
       "linewidth": 1.8,
       "linestyle": "-",
@@ -32,16 +22,18 @@
     },
     {
       "name": "Irms CA",
-      "value_column": "Irms_CA_avg",
-      "value_column_keywords": [
-        "irms_ca",
-        "current_ca",
-        "ica"
-      ],
       "line_color": "#009E73",
       "linewidth": 1.4,
       "linestyle": "-",
       "alpha": 0.8,
+      "marker": "none"
+    },
+    {
+      "name": "Irms N",
+      "line_color": "#7f7f7f",
+      "linewidth": 1.5,
+      "linestyle": "-",
+      "alpha": 0.65,
       "marker": "none"
     }
   ],

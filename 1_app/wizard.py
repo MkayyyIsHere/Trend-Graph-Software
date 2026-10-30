@@ -29,6 +29,7 @@ from utils.constants import (
 from backend.batch_profile import BatchProfileManager
 from backend.batch_worker import run_batch as _run_batch_worker
 from backend.config import ConfigManager
+from backend.formats import SYSTEMS, sniff_brand
 from backend.processors import EventDataProcessor, event_plot_window
 
 _DATA_EXTS   = ('.csv', '.txt')
@@ -140,6 +141,17 @@ def wizard_tab():
     step2 = _step_card(2, "Analyser data", [
         _path_row('wz-data-folder', 'wz-browse-data',
                   'Folder with the analyser exports (.csv / .txt)…', s.get('wz_data_folder', '')),
+        dbc.Row([
+            dbc.Col(dbc.Label("System wiring", className="small mb-0"), width='auto'),
+            dbc.Col(dbc.RadioItems(
+                id='wz-system', inline=True, className="small",
+                options=[{'label': '3-phase 4-wire (with N)',    'value': '3P4W'},
+                         {'label': '3-phase 3-wire (without N)', 'value': '3P3W'}],
+                value=s.get('wz_system', '3P4W') if s.get('wz_system') in SYSTEMS else '3P4W',
+            )),
+        ], className="align-items-center mb-1 g-2"),
+        html.Small("Voltage and THD charts show phase-to-neutral (AN/BN/CN) for 4-wire, "
+                   "line-to-line (AB/BC/CA) for 3-wire.", className="text-muted d-block mb-2"),
         html.Div(id='wz-data-info', className="small"),
     ], 'wz-step2-badge')
 
@@ -269,10 +281,24 @@ def register_wizard_callbacks(app, state):
             return (html.Span("No .csv / .txt files in this folder.", className="text-danger"),
                     _bad("no data files"))
         save_settings(wz_data_folder=folder)
-        chips = [dbc.Badge(os.path.basename(f), color="light", text_color="dark",
-                           className="me-1 mb-1 border") for f in files[:40]]
-        more  = [html.Small(f" …and {len(files) - 40} more")] if len(files) > 40 else []
-        return html.Div(chips + more), _ok(f"{len(files)} file(s)")
+        brands = [sniff_brand(f) for f in files]
+        colour = {'Fluke': 'warning', 'Hioki': 'info'}
+        chips  = [dbc.Badge([html.B(b + " "), os.path.basename(f)],
+                            color=colour.get(b, 'danger'), text_color='dark' if b in colour else None,
+                            className="me-1 mb-1",
+                            title=None if b in colour else "Unrecognised export format")
+                  for f, b in list(zip(files, brands))[:40]]
+        more   = [html.Small(f" …and {len(files) - 40} more")] if len(files) > 40 else []
+        unknown = brands.count('Unknown')
+        note   = [html.Div(f"⚠ {unknown} file(s) not recognised as Fluke or Hioki exports — "
+                           "they may fail to plot.", className="text-danger mt-1")] if unknown else []
+        return html.Div(chips + more + note), _ok(f"{len(files)} file(s)")
+
+    @app.callback(Output('wz-system', 'className'), Input('wz-system', 'value'))
+    def remember_system(system):
+        if system in SYSTEMS:
+            save_settings(wz_system=system)
+        return "small"
 
     # ── Step 3: chart table (refreshes when Config Manager folder/profile changes)
     @app.callback(
@@ -353,10 +379,11 @@ def register_wizard_callbacks(app, state):
         State({'type': 'wz-ymax', 'file': ALL}, 'value'),
         State({'type': 'wz-yauto', 'file': ALL}, 'value'),
         State('batch-workers', 'value'),
+        State('wz-system', 'value'),
         prevent_initial_call=True,
     )
     def run(_, event_path, data_folder, out_folder, x_min, x_max,
-            ons, ids, ymins, ymaxs, autos, workers):
+            ons, ids, ymins, ymaxs, autos, workers, system):
         if state.batch_running:
             raise PreventUpdate
 
@@ -402,7 +429,8 @@ def register_wizard_callbacks(app, state):
                   state.batch_log, state.batch_stop_event, _done, None),
             kwargs={'aesthetics_path': _aesthetics_for(folder),
                     'axis_overrides':  overrides,
-                    'x_window':        x_window},
+                    'x_window':        x_window,
+                    'system':          system or '3P4W'},
             daemon=True,
         ).start()
         return False, ""
@@ -432,7 +460,7 @@ def register_wizard_callbacks(app, state):
     )
     def poll(_):
         log   = list(state.batch_log)
-        done  = sum(1 for l in log if '] ✓' in l or '] ✗' in l)
+        done  = sum(1 for l in log if '] ✓' in l or '] ✗' in l or '] ↷' in l)
         fails = sum(1 for l in log if '] ✗' in l)
         total = 0
         for line in log:
@@ -467,7 +495,10 @@ def register_wizard_callbacks(app, state):
                 f"✓ Done — {n_ok} image(s) saved to {r['out_folder']}")
         if r.get('errors'):
             head += f"  ({r['errors']} failed — see the batch log in Advanced.)"
-        warn = [html.Div(f"⚠ {w}", className="small") for w in r.get('warnings', [])]
+        notes = [html.Div(f"⚠ {w}", className="small") for w in r.get('warnings', [])]
+        warn  = notes[:5] + ([html.Details([html.Summary(f"…{len(notes) - 5} more note(s)",
+                                                        className="small"), *notes[5:]])]
+                             if len(notes) > 5 else [])
         return dbc.Alert([
             html.Div(head, className="mb-2"),
             *warn,

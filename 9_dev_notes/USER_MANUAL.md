@@ -45,7 +45,11 @@
 The **🚀 Quick Run** tab opens first and covers a normal job on one page. No config folder is needed, because the default charts, colours and PowerPoint template are built into the app.
 
 1. **Test schedule:** pick your event schedule (CSV or Excel `.xlsx`). It needs the columns *Test Description, Test ID, Date, Start Time, End Time* (and optionally *Normalized Time*). A title block above the header row is fine. The plot window (*Plot from / to*) is worked out from the first and last event, with 30 minutes either side. You can edit it if needed.
-2. **Analyser data:** pick the folder that holds your analyser exports. Each file is listed.
+2. **Analyser data:** pick the folder that holds your analyser exports. Each file is listed with its brand (**Fluke** or **Hioki**); files in mixed brands can sit in the same folder. Choose the **system wiring**:
+   - **3-phase 4-wire (with N):** Voltage and THD charts show phase-to-neutral (AN/BN/CN) where the export has it.
+   - **3-phase 3-wire (without N):** Voltage and THD charts show line-to-line (AB/BC/CA).
+
+   Hioki exports name their own channels (U1 = phase-to-neutral, U12 = line-to-line), so they are always labelled correctly. If an export only has total power / PF (no per-phase values), those two charts are skipped for that file and listed after the run.
 3. **Charts & output:** pick an output folder, tick the charts you want, and set **Y min / Y max** per chart. Switch on **Auto Y** to fit the axis to the data.
 4. Click **▶ Generate charts**. When it finishes you can **Open folder**, **Build PowerPoint** or **Download ZIP**.
 

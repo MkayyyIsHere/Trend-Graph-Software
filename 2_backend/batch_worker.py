@@ -11,7 +11,8 @@ from typing import List, Callable
 
 import kaleido
 
-from backend.processors import SeriesDataProcessor, EventDataProcessor, event_plot_window
+from backend.processors import EventDataProcessor, event_plot_window
+from backend.formats import ChartSkipped, DataFileError, load_chart_data
 from backend.config import ConfigManager, GanttConfigManager
 from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
@@ -34,6 +35,7 @@ def run_batch(
     aesthetics_path: str = None,   # path to aesthetics.json; falls back to DEFAULT_AESTHETICS_PATH
     axis_overrides: dict = None,   # {config filename: {y_min, y_max, ...}}; None value = auto
     x_window:       tuple = None,  # (x_min, x_max) strings applied to every chart
+    system:         str = '3P4W',  # wiring of the recordings: '3P4W' (with N) or '3P3W'
 ):
     """
     Runs the full batch render in a background thread.
@@ -57,6 +59,7 @@ def run_batch(
     blog(f"  Data files  : {len(data_files)}")
     blog(f"  Config files: {len(config_files)}")
     blog(f"  Output      : {out_folder}")
+    blog(f"  System      : {system}")
     if override_chart:
         res = override_chart.get('resolution_px')
         dpi = override_chart.get('dpi')
@@ -77,7 +80,7 @@ def run_batch(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
             on_done, override_chart, ts, _batch_start, aesthetics_path,
-            axis_overrides, x_window,
+            axis_overrides, x_window, system,
         )
     finally:
         kaleido.stop_sync_server(silence_warnings=True)
@@ -102,6 +105,7 @@ def _run_batch_body(
     aesthetics_path: str = None,
     axis_overrides: dict = None,
     x_window:       tuple = None,
+    system:         str = '3P4W',
 ):
     """Inner body of run_batch — called after the kaleido server is live."""
     blog = batch_log.append
@@ -154,6 +158,7 @@ def _run_batch_body(
     errors     = []
     succeeded  = set()
     no_overlap = set()   # data files with no samples inside the plot window
+    skipped    = []      # charts a file cannot supply (e.g. totals-only power)
     lock       = threading.Lock()
 
     def _render_one(item):
@@ -164,7 +169,7 @@ def _run_batch_body(
 
         cfg = ConfigManager(cfg_path, aesthetics_path=aesthetics_path, logger=logger)
         if not cfg.config:
-            return out_name, f"SKIPPED (invalid config): {cfg_name}"
+            return out_name, f"SKIPPED (invalid config): {cfg_name}", None
 
         # Apply UI-level overrides (resolution/dpi) on top of the JSON values.
         # This ensures that settings changed in the Settings modal are honoured
@@ -185,19 +190,16 @@ def _run_batch_body(
             else:
                 axis[k] = v
 
-        all_dp = []
-        for sc in cfg.get_all_series_configs():
-            proc = SeriesDataProcessor(
-                logger=logger,
-                value_column=sc.get('value_column'),
-                value_column_keywords=sc.get('value_column_keywords', ['value']),
-            )
-            if not proc.load_data(data_path):
-                return out_name, f"FAILED (data load): {data_name}"
-            pts = proc.get_data_points()
-            if not pts:
-                return out_name, f"No data points: {data_name}"
-            all_dp.append(pts)
+        # Each data file is parsed once and shared by every chart (formats cache).
+        try:
+            all_dp = load_chart_data(cfg, data_path, system)
+        except ChartSkipped as e:
+            chart = os.path.splitext(cfg_name)[0]
+            return out_name, None, f"{data_name}: {chart} not drawn — {e}."
+        except DataFileError as e:
+            return out_name, f"FAILED: {data_name} / {cfg_name} — {e}", None
+        except Exception as e:
+            return out_name, f"FAILED (data load): {data_name} — {e}", None
 
         try:
             win = [datetime.strptime(axis[k], '%Y-%m-%d %H:%M:%S') for k in ('x_min', 'x_max')]
@@ -234,10 +236,10 @@ def _run_batch_body(
                 opts={"format": "png", "width": width_px,
                       "height": height_px, "scale": 1},
             )
-            return out_name, None   # success
+            return out_name, None, None   # success
 
         except Exception as e:
-            return out_name, f"ERROR: {out_name} — {e}\n{traceback.format_exc()}"
+            return out_name, f"ERROR: {out_name} — {e}\n{traceback.format_exc()}", None
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         futures = {pool.submit(_render_one, item): item for item in work_items}
@@ -251,7 +253,7 @@ def _run_batch_body(
                 blog(f"  {cancelled} queued chart(s) cancelled")
 
             try:
-                out_name, err = future.result()
+                out_name, err, skip = future.result()
             except CancelledError:
                 continue
             with lock:
@@ -260,12 +262,15 @@ def _run_batch_body(
                 if err:
                     blog(f"  {ts()} {progress} ✗ {err}")
                     errors.append(err)
+                elif skip:
+                    blog(f"  {ts()} {progress} ↷ {skip}")
+                    skipped.append(skip)
                 else:
                     blog(f"  {ts()} {progress} ✓ {out_name}")
                     succeeded.add(out_name)
 
     blog("\n" + "=" * 55)
-    saved   = done_count - len(errors)
+    saved   = done_count - len(errors) - len(skipped)
     elapsed = (datetime.now() - _batch_start).total_seconds()
     elapsed_str = f"{int(elapsed // 60)}m {elapsed % 60:.1f}s" if elapsed >= 60 else f"{elapsed:.1f}s"
     if stopped:
@@ -280,7 +285,7 @@ def _run_batch_body(
         for e in errors:
             blog(f"  • {e}")
     warnings = [f"{name}: no data inside the plot window — check the file matches the schedule's dates."
-                for name in sorted(no_overlap)]
+                for name in sorted(no_overlap)] + sorted(skipped)
     for w in warnings:
         blog(f"⚠ {w}")
     blog(f"Output: {out_folder}")

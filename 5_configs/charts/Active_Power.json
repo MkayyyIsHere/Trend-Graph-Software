@@ -1,13 +1,11 @@
 {
   "_description": "Config for plotting 3-Phase Active Power over time with Gantt events overlay.",
   "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics (fonts, resolution, grid, legend) are inherited from aesthetics.json.",
+  "_metric_help": "'metric' picks the columns for the export brand and wiring (see 2_backend/formats.py). Series entries are style slots in phase order (A, B, C, then N); names are set from the data.",
+  "metric": "active_power",
   "series": [
     {
       "name": "P Avg A",
-      "value_column": "PowerPfund_A_avg",
-      "value_column_keywords": [
-        "PowerPfund_A_avg"
-      ],
       "line_color": "#4C72B0",
       "linewidth": 1.5,
       "linestyle": "-",
@@ -16,10 +14,6 @@
     },
     {
       "name": "P Avg B",
-      "value_column": "PowerPfund_B_avg",
-      "value_column_keywords": [
-        "PowerPfund_B_avg"
-      ],
       "line_color": "#DD8452",
       "linewidth": 1.5,
       "linestyle": "-",
@@ -28,10 +22,6 @@
     },
     {
       "name": "P Avg C",
-      "value_column": "PowerPfund_C_avg",
-      "value_column_keywords": [
-        "PowerPfund_C_avg"
-      ],
       "line_color": "#55A868",
       "linewidth": 1.5,
       "linestyle": "-",

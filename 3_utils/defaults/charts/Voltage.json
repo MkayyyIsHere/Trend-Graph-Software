@@ -1,15 +1,11 @@
 {
   "_description": "Config for plotting 3-Phase Voltage over time with Gantt events overlay.",
   "_usage": "Load via 'Browse Config...' in the GUI. Visual aesthetics inherited from aesthetics.json.",
+  "_metric_help": "'metric' picks the columns for the export brand and wiring (see 2_backend/formats.py). Series entries are style slots in phase order (A, B, C, then N); names are set from the data.",
+  "metric": "voltage",
   "series": [
     {
       "name": "Vrms AB",
-      "value_column": "Vrms_AB_avg",
-      "value_column_keywords": [
-        "vrms_ab",
-        "voltage_ab",
-        "vab"
-      ],
       "line_color": "#09fb92",
       "linewidth": 1.5,
       "linestyle": "-",
@@ -18,12 +14,6 @@
     },
     {
       "name": "Vrms BC",
-      "value_column": "Vrms_BC_avg",
-      "value_column_keywords": [
-        "vrms_bc",
-        "voltage_bc",
-        "vbc"
-      ],
       "line_color": "#2ca02c",
       "linewidth": 1.5,
       "linestyle": "-",
@@ -32,12 +22,6 @@
     },
     {
       "name": "Vrms CA",
-      "value_column": "Vrms_CA_avg",
-      "value_column_keywords": [
-        "vrms_ca",
-        "voltage_ca",
-        "vca"
-      ],
       "line_color": "#1f77b4",
       "linewidth": 1.5,
       "linestyle": "-",
