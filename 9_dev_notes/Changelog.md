@@ -62,3 +62,5 @@ Format: version — date — what changed
 - Recording gaps are detected relative to the logging interval (> 3× interval, min 2 s), so exports
   logged every 10 s / 1 min draw as lines instead of separate points
 - Auto Y fits the data inside the plot window rather than the whole file
+- Plot window padding (minutes, 0 allowed) and :00/:30 rounding are adjustable and remembered
+- PowerPoint template picker on the Quick Run tab (remembered, falls back to the built-in one)

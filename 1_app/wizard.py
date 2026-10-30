@@ -18,7 +18,7 @@ import os
 import re
 import threading
 import zipfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dash import Input, Output, State, ALL, MATCH, ctx, html, dcc, no_update
 from dash.exceptions import PreventUpdate
@@ -75,6 +75,12 @@ def _chart_entries(folder: str) -> list:
             'base':     base_unit(cfg.config),    # None = dimensionless (PF, THD %)
         })
     return entries
+
+
+def _ppt_template() -> str:
+    """Remembered PowerPoint template if it still exists, else the built-in one."""
+    path = load_settings().get('ppt_template') or ''
+    return path if os.path.isfile(path) else DEFAULT_PPT_TEMPLATE_PATH
 
 
 def _data_files(folder: str) -> list:
@@ -143,9 +149,19 @@ def wizard_tab():
             dbc.Col(dbc.Input(id='wz-x-min', size='sm', placeholder='YYYY-MM-DD HH:MM'), width=3),
             dbc.Col(dbc.Label("to", className="small mb-0"), width='auto'),
             dbc.Col(dbc.Input(id='wz-x-max', size='sm', placeholder='YYYY-MM-DD HH:MM'), width=3),
-            dbc.Col(html.Small("Filled in from the schedule (±30 min). Edit if needed.",
-                               className="text-muted"), width=True),
+            dbc.Col(dbc.Label("Padding", className="small mb-0 ms-2"), width='auto'),
+            dbc.Col(dbc.InputGroup([
+                dbc.Input(id='wz-pad', type='number', min=0, step=5, debounce=True,
+                          value=s.get('wz_pad', 30)),
+                dbc.InputGroupText("min"),
+            ], size='sm'), width=2),
+            dbc.Col(dbc.Checkbox(id='wz-snap', label="Round to :00 / :30", className="small",
+                                 value=s.get('wz_snap', True)), width='auto'),
         ], className="align-items-center g-2"),
+        html.Small("Filled in from the schedule: first start − padding → last end + padding. "
+                   "Set padding to 0 and untick rounding for the exact schedule times. "
+                   "You can also type the times directly.",
+                   className="text-muted d-block mt-1"),
     ], 'wz-step1-badge')
 
     step2 = _step_card(2, "Analyser data", [
@@ -168,6 +184,15 @@ def wizard_tab():
     step3 = _step_card(3, "Charts & output", [
         _path_row('wz-output-folder', 'wz-browse-output',
                   'Folder to save the chart images in…', s.get('wz_output_folder', '')),
+        dbc.Row([
+            dbc.Col(dbc.Label("PowerPoint template", className="small mb-0"), width='auto'),
+            dbc.Col(_path_row('wz-ppt-template', 'wz-browse-ppt',
+                              'Built-in template — Browse to use your own .pptx',
+                              s.get('ppt_template', ''))),
+            dbc.Col(dbc.Button("Use built-in", id='wz-ppt-default', color='link', size='sm',
+                               className="p-0 mb-2"), width='auto'),
+        ], className="align-items-center g-2"),
+        html.Div(id='wz-ppt-template-info', className="small text-muted mb-2"),
         html.Div(id='wz-chart-source', className="small text-muted mb-2"),
         html.Div(id='wz-chart-table', className="mb-2"),
         html.Div([
@@ -253,6 +278,7 @@ def register_wizard_callbacks(app, state):
         ('wz-browse-event',  'wz-event-path',    '/api/pick-file?kind=events&save=false'),
         ('wz-browse-data',   'wz-data-folder',   '/api/pick-folder?title=Select%20Data%20Folder'),
         ('wz-browse-output', 'wz-output-folder', '/api/pick-folder?title=Select%20Output%20Folder'),
+        ('wz-browse-ppt',    'wz-ppt-template',  '/api/pick-file?kind=pptx&save=false'),
     ]:
         app.clientside_callback(
             f"""
@@ -274,8 +300,10 @@ def register_wizard_callbacks(app, state):
         Output('wz-x-min', 'value'),
         Output('wz-x-max', 'value'),
         Input('wz-event-path', 'value'),
+        Input('wz-pad', 'value'),
+        Input('wz-snap', 'value'),
     )
-    def load_events(path):
+    def load_events(path, pad, snap):
         if not path:
             return "", _todo("not set"), no_update, no_update
         if not os.path.isfile(path):
@@ -285,14 +313,39 @@ def register_wizard_callbacks(app, state):
             return ("Could not read any events — check the columns "
                     "(Test Description, Test ID, Date, Start Time, End Time).",
                     _bad("invalid schedule"), no_update, no_update)
-        save_settings(wz_event_path=path)
+        pad = max(0.0, _num(pad) or 0.0)
+        save_settings(wz_event_path=path, wz_pad=pad, wz_snap=bool(snap))
         tasks  = proc.get_tasks()
-        lo, hi = event_plot_window(tasks)
+        lo, hi = event_plot_window(tasks, timedelta(minutes=pad), bool(snap))
         ids    = sorted({t.display_id for t in tasks})
         info   = (f"{len(tasks)} events ({', '.join(ids[:12])}{'…' if len(ids) > 12 else ''}) · "
                   f"{min(t.start_time for t in tasks):%d %b %H:%M} → "
                   f"{max(t.end_time for t in tasks):%d %b %H:%M}")
         return info, _ok(f"{len(tasks)} events"), lo.strftime(_WINDOW_FMT), hi.strftime(_WINDOW_FMT)
+
+    # ── Step 3: PowerPoint template (remembered; empty = built-in) ───────────
+    @app.callback(
+        Output('wz-ppt-template', 'value'),
+        Input('wz-ppt-default', 'n_clicks'),
+        prevent_initial_call=True,
+    )
+    def ppt_use_default(_):
+        return ''
+
+    @app.callback(
+        Output('wz-ppt-template-info', 'children'),
+        Input('wz-ppt-template', 'value'),
+    )
+    def check_ppt_template(path):
+        path = (path or '').strip().strip('"')
+        if not path:
+            save_settings(ppt_template='')
+            return "Slides use the built-in template."
+        if not path.lower().endswith('.pptx') or not os.path.isfile(path):
+            return html.Span("✗ Template not found — the built-in template will be used.",
+                             className="text-danger")
+        save_settings(ppt_template=path)
+        return f"✓ Slides use {os.path.basename(path)}"
 
     # ── Step 2: data folder ──────────────────────────────────────────────────
     @app.callback(
@@ -605,7 +658,7 @@ def register_wizard_callbacks(app, state):
         outputs = r.get('outputs') or []
         if not outputs or state.ppt_running:
             raise PreventUpdate
-        template = load_settings().get('ppt_template') or DEFAULT_PPT_TEMPLATE_PATH
+        template = _ppt_template()
         stem     = os.path.splitext(os.path.basename(event_path or 'Charts'))[0]
         out_path = os.path.join(r['out_folder'], f"{stem}_Charts.pptx")
         state.ppt_running = True
@@ -617,7 +670,8 @@ def register_wizard_callbacks(app, state):
             kwargs={'images': [os.path.basename(p) for p in outputs]},
             daemon=True,
         ).start()
-        return html.Small("⏳ Building PowerPoint…"), False, True
+        return (html.Small(f"⏳ Building PowerPoint with {os.path.basename(template)}…"),
+                False, True)
 
     @app.callback(
         Output('wz-ppt-status', 'children', allow_duplicate=True),

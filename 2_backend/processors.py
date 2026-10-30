@@ -25,13 +25,16 @@ def _canon(name) -> str:
 _CANON_COLUMNS = {_canon(c): c for c in EVENT_COLUMNS}
 
 
-def event_plot_window(tasks, pad: timedelta = _PLOT_PAD):
-    """Plot window for a schedule: first start − pad … last end + pad, snapped
-    outward to 30-minute marks (matches the 30-min tick grid). None if no tasks."""
+def event_plot_window(tasks, pad: timedelta = _PLOT_PAD, snap: bool = True):
+    """Plot window for a schedule: first start − pad … last end + pad, optionally
+    snapped outward to 30-minute marks (matches the 30-min tick grid).
+    None if no tasks."""
     if not tasks:
         return None
     lo = min(t.start_time for t in tasks) - pad
     hi = max(t.end_time   for t in tasks) + pad
+    if not snap:
+        return lo.replace(microsecond=0), hi.replace(microsecond=0)
     lo = lo.replace(minute=0 if lo.minute < 30 else 30, second=0, microsecond=0)
     hi_floor = hi.replace(minute=0 if hi.minute < 30 else 30, second=0, microsecond=0)
     hi = hi_floor if hi_floor == hi else hi_floor + timedelta(minutes=30)
