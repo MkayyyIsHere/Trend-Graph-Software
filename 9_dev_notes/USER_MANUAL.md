@@ -44,7 +44,7 @@
 
 The **🚀 Quick Run** tab opens first and covers a normal job on one page. No config folder is needed, because the default charts, colours and PowerPoint template are built into the app.
 
-1. **Test schedule:** pick your event schedule (CSV or Excel `.xlsx`). It needs the columns *Test Description, Test ID, Date, Start Time, End Time* (and optionally *Normalized Time*). A title block above the header row is fine. The plot window (*Plot from / to*) is worked out from the first and last event plus **Padding** (30 minutes by default) either side, rounded out to :00 / :30. Set Padding to 0 and untick **Round to :00 / :30** to plot exactly the schedule times, or type the times yourself. Padding and rounding are remembered.
+1. **Test schedule:** pick your event schedule (CSV or Excel `.xlsx`). It needs the columns *Test Description, Test ID, Date, Start Time, End Time* (and optionally *Normalized Time*). A title block above the header row is fine. The plot window (*Plot from / to*) is filled in from the schedule: the first event's start to the last event's end. Type other times if you need a different window.
 2. **Analyser data:** pick the folder that holds your analyser exports. Each file is listed with its brand (**Fluke** or **Hioki**); files in mixed brands can sit in the same folder. Choose the **system wiring**:
    - **3-phase 4-wire (with N):** Voltage and THD charts show phase-to-neutral (AN/BN/CN) where the export has it.
    - **3-phase 3-wire (without N):** Voltage and THD charts show line-to-line (AB/BC/CA).

@@ -29,7 +29,7 @@ Format: version — date — what changed
 
 ## [1.1.0] - unreleased
 - New 🚀 Quick Run tab (default): Events → Data → Generate & Export in one page
-- Plot time window is derived from the event schedule (±30 min); no more editing x_min/x_max
+- Plot time window is derived from the event schedule (first start → last end); no more editing x_min/x_max
 - Per-chart Y min / Y max (or Auto) editable on the Quick Run tab, remembered between runs
 - Default charts, colours and PPT template are bundled in the .exe — no config folder needed
 - Folders, event file and chart choices are remembered in %APPDATA%\TrendGraph\settings.json
@@ -62,5 +62,4 @@ Format: version — date — what changed
 - Recording gaps are detected relative to the logging interval (> 3× interval, min 2 s), so exports
   logged every 10 s / 1 min draw as lines instead of separate points
 - Auto Y fits the data inside the plot window rather than the whole file
-- Plot window padding (minutes, 0 allowed) and :00/:30 rounding are adjustable and remembered
 - PowerPoint template picker on the Quick Run tab (remembered, falls back to the built-in one)

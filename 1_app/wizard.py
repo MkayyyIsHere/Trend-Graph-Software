@@ -18,7 +18,7 @@ import os
 import re
 import threading
 import zipfile
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from dash import Input, Output, State, ALL, MATCH, ctx, html, dcc, no_update
 from dash.exceptions import PreventUpdate
@@ -149,19 +149,9 @@ def wizard_tab():
             dbc.Col(dbc.Input(id='wz-x-min', size='sm', placeholder='YYYY-MM-DD HH:MM'), width=3),
             dbc.Col(dbc.Label("to", className="small mb-0"), width='auto'),
             dbc.Col(dbc.Input(id='wz-x-max', size='sm', placeholder='YYYY-MM-DD HH:MM'), width=3),
-            dbc.Col(dbc.Label("Padding", className="small mb-0 ms-2"), width='auto'),
-            dbc.Col(dbc.InputGroup([
-                dbc.Input(id='wz-pad', type='number', min=0, step=5, debounce=True,
-                          value=s.get('wz_pad', 30)),
-                dbc.InputGroupText("min"),
-            ], size='sm'), width=2),
-            dbc.Col(dbc.Checkbox(id='wz-snap', label="Round to :00 / :30", className="small",
-                                 value=s.get('wz_snap', True)), width='auto'),
         ], className="align-items-center g-2"),
-        html.Small("Filled in from the schedule: first start − padding → last end + padding. "
-                   "Set padding to 0 and untick rounding for the exact schedule times. "
-                   "You can also type the times directly.",
-                   className="text-muted d-block mt-1"),
+        html.Small("Filled in from the schedule: first event start → last event end. "
+                   "Type other times if needed.", className="text-muted d-block mt-1"),
     ], 'wz-step1-badge')
 
     step2 = _step_card(2, "Analyser data", [
@@ -300,10 +290,8 @@ def register_wizard_callbacks(app, state):
         Output('wz-x-min', 'value'),
         Output('wz-x-max', 'value'),
         Input('wz-event-path', 'value'),
-        Input('wz-pad', 'value'),
-        Input('wz-snap', 'value'),
     )
-    def load_events(path, pad, snap):
+    def load_events(path):
         if not path:
             return "", _todo("not set"), no_update, no_update
         if not os.path.isfile(path):
@@ -313,10 +301,9 @@ def register_wizard_callbacks(app, state):
             return ("Could not read any events — check the columns "
                     "(Test Description, Test ID, Date, Start Time, End Time).",
                     _bad("invalid schedule"), no_update, no_update)
-        pad = max(0.0, _num(pad) or 0.0)
-        save_settings(wz_event_path=path, wz_pad=pad, wz_snap=bool(snap))
+        save_settings(wz_event_path=path)
         tasks  = proc.get_tasks()
-        lo, hi = event_plot_window(tasks, timedelta(minutes=pad), bool(snap))
+        lo, hi = event_plot_window(tasks)
         ids    = sorted({t.display_id for t in tasks})
         info   = (f"{len(tasks)} events ({', '.join(ids[:12])}{'…' if len(ids) > 12 else ''}) · "
                   f"{min(t.start_time for t in tasks):%d %b %H:%M} → "
