@@ -39,3 +39,6 @@ desktop.ini
 debug_log.txt
 last_session.json
 project_structure.txt
+
+# ── Claude Code local settings ───────────────────────────────────
+.claude/
