@@ -144,8 +144,36 @@ class SeriesDataProcessor:
 
 
 # =============================================================================
-# DATA PROCESSING — Gantt/Event  (unchanged)
+# DATA PROCESSING — Gantt/Event
 # =============================================================================
+
+EVENT_COLUMNS = ('Test Description', 'Test ID', 'Date', 'Start Time', 'End Time', 'Normalized Time')
+EVENT_EXTS    = ('.csv', '.txt', '.xlsx', '.xlsm', '.xls')
+
+_DATE_FORMATS = ('%d/%m/%Y', '%d/%m/%y', '%d-%m-%Y', '%d.%m.%Y', '%Y-%m-%d', '%Y/%m/%d',
+                 '%d %b %Y', '%d-%b-%Y', '%d-%b-%y', '%d %B %Y')
+_PLOT_PAD     = timedelta(minutes=30)
+
+
+def _canon(name) -> str:
+    return re.sub(r'[^a-z]', '', str(name).lower())
+
+
+_CANON_COLUMNS = {_canon(c): c for c in EVENT_COLUMNS}
+
+
+def event_plot_window(tasks, pad: timedelta = _PLOT_PAD):
+    """Plot window for a schedule: first start − pad … last end + pad, snapped
+    outward to 30-minute marks (matches the 30-min tick grid). None if no tasks."""
+    if not tasks:
+        return None
+    lo = min(t.start_time for t in tasks) - pad
+    hi = max(t.end_time   for t in tasks) + pad
+    lo = lo.replace(minute=0 if lo.minute < 30 else 30, second=0, microsecond=0)
+    hi_floor = hi.replace(minute=0 if hi.minute < 30 else 30, second=0, microsecond=0)
+    hi = hi_floor if hi_floor == hi else hi_floor + timedelta(minutes=30)
+    return lo, hi
+
 
 class EventDataProcessor:
     def __init__(self, logger=None):
@@ -157,27 +185,74 @@ class EventDataProcessor:
             getattr(self.logger, level.lower())(msg)
 
     def load_csv(self, file_path: str) -> bool:
+        """Load a schedule from CSV or Excel (name kept for existing callers)."""
         try:
             self.tasks = []
-            df = pd.read_csv(file_path, quotechar='"', quoting=0, engine='python')
+            df, header_row = self._read_table(file_path)
+            if df is None:
+                self._log("Event file has no 'Test Description' / 'Date' / 'Start Time' "
+                          "header row", 'ERROR')
+                return False
             self._log(f"Event file loaded: {file_path}")
-            self._log(f"Processing {len(df)} rows from CSV")
+            self._log(f"Processing {len(df)} rows")
             for idx, row in df.iterrows():
-                self._process_row(row, idx + 2)
+                # row_num = spreadsheet row number, for messages
+                self._process_row(row, idx + header_row + 2)
             self._log(f"Successfully processed {len(self.tasks)} valid tasks")
             return True
         except Exception as e:
-            self._log(f"Error loading event CSV: {e}", 'ERROR')
+            self._log(f"Error loading event file: {e}", 'ERROR')
             return False
+
+    def _read_table(self, file_path: str):
+        """Return (DataFrame with canonical column names, header row index).
+
+        The header row is found by name (it may sit below a title block), and
+        column names are matched loosely ('test id', 'TestID', 'Start time' …).
+        Excel: the first sheet that has the schedule columns is used."""
+        if file_path.lower().endswith(('.xlsx', '.xlsm', '.xls')):
+            sheets = pd.read_excel(file_path, sheet_name=None, header=None, dtype=object)
+            raws   = list(sheets.values())
+        else:
+            raws = [pd.read_csv(file_path, header=None, dtype=str, quotechar='"',
+                                engine='python', encoding='utf-8-sig')]
+
+        for raw in raws:
+            for r in range(min(len(raw), 20)):
+                names = [_CANON_COLUMNS.get(_canon(v), v) for v in raw.iloc[r]]
+                if {'Test Description', 'Date', 'Start Time'} <= set(names):
+                    df = raw.iloc[r + 1:].reset_index(drop=True)
+                    df.columns = names
+                    return df.dropna(how='all'), r
+        return None, 0
+
+    @staticmethod
+    def _cell_str(value) -> str:
+        """Excel gives datetime / time objects; render them like CSV text."""
+        if isinstance(value, datetime):
+            return value.strftime('%Y-%m-%d') if value.time() == datetime.min.time()                 else value.strftime('%Y-%m-%d %H:%M')
+        if hasattr(value, 'strftime'):          # datetime.time
+            return value.strftime('%H:%M')
+        return '' if value is None else str(value).strip()
+
+    def _parse_date(self, date_str: str):
+        date_str = date_str.split(' ')[0] if re.match(r'^\d{4}-\d{2}-\d{2} ', date_str) else date_str
+        for fmt in _DATE_FORMATS:
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        return None
 
     def _process_row(self, row, row_num: int):
         try:
-            description         = str(row.get('Test Description', '')).strip()
-            test_id             = str(row.get('Test ID', '')).strip()
-            date_str            = str(row.get('Date', '')).strip()
-            start_time_str      = str(row.get('Start Time', '')).strip()
-            end_time_str        = str(row.get('End Time', '')).strip()
-            normalized_time_str = str(row.get('Normalized Time', '')).strip()
+            cell                = lambda k: self._cell_str(row.get(k, ''))  # noqa: E731
+            description         = cell('Test Description')
+            test_id             = cell('Test ID')
+            date_str            = cell('Date')
+            start_time_str      = cell('Start Time')
+            end_time_str        = cell('End Time')
+            normalized_time_str = cell('Normalized Time')
 
             is_normalization = bool(normalized_time_str and normalized_time_str.lower() != 'nan')
 
@@ -188,9 +263,8 @@ class EventDataProcessor:
                 self._log(f"Row {row_num}: Missing test ID, assigned as 'UNASSIGNED'", 'WARNING')
             if not date_str or date_str.lower() == 'nan':
                 self._log(f"Row {row_num}: Missing date, skipping", 'WARNING'); return
-            try:
-                date_obj = datetime.strptime(date_str, '%d/%m/%Y')
-            except ValueError:
+            date_obj = self._parse_date(date_str)
+            if date_obj is None:
                 self._log(f"Row {row_num}: Invalid date format '{date_str}', skipping", 'WARNING'); return
 
             start_time, end_time = self._parse_start_end(date_obj, start_time_str, end_time_str, row_num)
@@ -273,7 +347,7 @@ class EventDataProcessor:
         return None, None
 
     def _parse_time(self, time_str, date_obj, row_num):
-        for fmt in ('%I:%M%p', '%H:%M', '%I:%M %p'):
+        for fmt in ('%I:%M%p', '%H:%M', '%I:%M %p', '%H:%M:%S', '%I:%M:%S %p', '%I.%M%p', '%H.%M'):
             try:
                 return datetime.combine(date_obj.date(),
                                         datetime.strptime(time_str.strip(), fmt).time())

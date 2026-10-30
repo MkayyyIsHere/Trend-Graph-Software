@@ -49,6 +49,7 @@ hidden += collect_submodules('numpy')
 hidden += collect_submodules('python_pptx')
 hidden += collect_submodules('pptx')
 hidden += collect_submodules('PIL')
+hidden += collect_submodules('openpyxl')      # Excel test schedules
 hidden += collect_submodules('kaleido')
 
 # ── Source folders ─────────────────────────────────────────────────

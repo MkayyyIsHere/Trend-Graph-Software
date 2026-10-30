@@ -35,3 +35,8 @@ Format: version — date — what changed
 - Folders, event file and chart choices are remembered in %APPDATA%\TrendGraph\settings.json
 - After a run: Open folder, Build PowerPoint (slides in chart order) and Download ZIP
 - Existing tabs kept as advanced tools
+- Test schedule can be CSV or Excel (.xlsx); header row found automatically, flexible column names,
+  date formats (d/m/Y, Y-m-d, 24 Jan 2026 …) and 24-hour or am/pm times
+- Advanced batch also derives the plot window from the schedule when a chart has no x_min/x_max
+- X-axis tick spacing adapts to the window length (15 min … 6 h)
+- Warning when a data file has no samples inside the plot window

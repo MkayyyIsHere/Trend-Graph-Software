@@ -45,6 +45,27 @@ def _nice_interval(span: float, target_count: int = 6) -> float:
     return nice * mag
 
 
+# (max window hours, major tick min, minor tick min) — keeps ~15–40 labels on the x axis
+_X_TICK_STEPS = [
+    (4,   15,  5),
+    (18,  30,  10),
+    (36,  60,  15),
+    (72,  120, 30),
+    (168, 360, 60),
+]
+
+
+def _x_tick_spacing(x_range):
+    """Return (major_ms, minor_ms) x-axis tick spacing for the plotted window."""
+    hours = 16.0
+    if x_range:
+        hours = (x_range[1] - x_range[0]).total_seconds() / 3600
+    for max_h, major_min, minor_min in _X_TICK_STEPS:
+        if hours <= max_h:
+            return major_min * 60_000, minor_min * 60_000
+    return 720 * 60_000, 120 * 60_000
+
+
 def build_plotly_figure(config: ConfigManager,
                          all_series_data: List[List[DataPoint]],
                          tasks: List[Task],
@@ -219,6 +240,7 @@ def build_plotly_figure(config: ConfigManager,
             pass
     if x_min_dt is None and flat_points:
         all_ts = [dp.timestamp for dp in flat_points]
+        all_ts += [t for task in tasks for t in (task.start_time, task.end_time)]
         x_min_dt, x_max_dt = min(all_ts), max(all_ts)
 
     if x_min_dt and x_max_dt:
@@ -368,6 +390,8 @@ def build_plotly_figure(config: ConfigManager,
         if all_ts:
             x_range = [min(all_ts), max(all_ts)]
 
+    x_major_ms, x_minor_ms = _x_tick_spacing(x_range)
+
     sp = config.get_subplot_params()
 
     # Convert subplot_params fractions to Plotly pixel margins when dimensions
@@ -410,14 +434,14 @@ def build_plotly_figure(config: ConfigManager,
             tickfont=dict(size=tick_fs, family=font_family),
             tickformat='%H:%M<br>%b %d',
             tickmode='linear',
-            dtick=1800000,              # major tick every 30 minutes (ms)
+            dtick=x_major_ms,           # labelled tick spacing (ms), scales with window
             tick0='2000-01-01 00:00:00',
             showspikes=True, spikemode='across', spikesnap='cursor',
             spikedash='solid', spikecolor='gray', spikethickness=1,
             showline=True, linecolor=grid_rgba, linewidth=1.5,
             ticks='outside', ticklen=6, tickwidth=1, tickcolor=grid_rgba,
             minor=dict(ticks='outside', ticklen=3, tickwidth=0.7,
-                       dtick=600000,   # minor tick every 10 minutes (ms)
+                       dtick=x_minor_ms,   # unlabelled minor ticks (ms)
                        tickcolor=f'rgba({_gr},{_gg},{_gb},{grid_alpha * 0.7:.2f})'),
         ),
         yaxis=dict(

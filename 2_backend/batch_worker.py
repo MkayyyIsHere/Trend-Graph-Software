@@ -11,7 +11,7 @@ from typing import List, Callable
 
 import kaleido
 
-from backend.processors import SeriesDataProcessor, EventDataProcessor
+from backend.processors import SeriesDataProcessor, EventDataProcessor, event_plot_window
 from backend.config import ConfigManager, GanttConfigManager
 from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
@@ -134,6 +134,14 @@ def _run_batch_body(
     tasks = event_proc.get_tasks()
     blog(f"{ts()} Events loaded: {len(tasks)} tasks")
 
+    # Time window precedence: explicit x_window (wizard) > chart x_min/x_max >
+    # derived from the schedule > data extent.
+    derived_window = event_plot_window(tasks)
+    if not x_window and derived_window:
+        blog(f"{ts()} Plot window from schedule: "
+             f"{derived_window[0]:%Y-%m-%d %H:%M} → {derived_window[1]:%Y-%m-%d %H:%M} "
+             f"(used where a chart has no x_min/x_max)")
+
     # Build all work items upfront
     work_items = []
     for data_path in data_files:
@@ -145,6 +153,7 @@ def _run_batch_body(
     done_count = 0
     errors     = []
     succeeded  = set()
+    no_overlap = set()   # data files with no samples inside the plot window
     lock       = threading.Lock()
 
     def _render_one(item):
@@ -168,6 +177,8 @@ def _run_batch_body(
         axis = cfg.config.setdefault('axis', {})
         if x_window:
             axis['x_min'], axis['x_max'] = x_window
+        elif derived_window and not (axis.get('x_min') and axis.get('x_max')):
+            axis['x_min'], axis['x_max'] = (d.strftime('%Y-%m-%d %H:%M:%S') for d in derived_window)
         for k, v in ((axis_overrides or {}).get(cfg_name) or {}).items():
             if v is None:
                 axis.pop(k, None)
@@ -187,6 +198,14 @@ def _run_batch_body(
             if not pts:
                 return out_name, f"No data points: {data_name}"
             all_dp.append(pts)
+
+        try:
+            win = [datetime.strptime(axis[k], '%Y-%m-%d %H:%M:%S') for k in ('x_min', 'x_max')]
+        except (KeyError, TypeError, ValueError):
+            win = None
+        if win and not any(win[0] <= dp.timestamp <= win[1] for pts in all_dp for dp in pts):
+            with lock:
+                no_overlap.add(data_name)
 
         try:
             # Each worker gets its own GanttConfigManager to avoid shared color_index
@@ -260,6 +279,10 @@ def _run_batch_body(
         blog(f"{len(errors)} error(s):")
         for e in errors:
             blog(f"  • {e}")
+    warnings = [f"{name}: no data inside the plot window — check the file matches the schedule's dates."
+                for name in sorted(no_overlap)]
+    for w in warnings:
+        blog(f"⚠ {w}")
     blog(f"Output: {out_folder}")
     blog("=" * 55)
 
@@ -273,4 +296,5 @@ def _run_batch_body(
         # Successful outputs in work order (data file × config order) — used
         # by the PPT builder so slide order is deterministic.
         'outputs':    [p for _, _, p, n in work_items if n in succeeded],
+        'warnings':   warnings,
     })

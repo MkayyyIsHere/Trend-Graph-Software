@@ -15,7 +15,7 @@ import os
 import re
 import threading
 import zipfile
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from dash import Input, Output, State, ALL, ctx, html, dcc, no_update
 from dash.exceptions import PreventUpdate
@@ -29,11 +29,10 @@ from utils.constants import (
 from backend.batch_profile import BatchProfileManager
 from backend.batch_worker import run_batch as _run_batch_worker
 from backend.config import ConfigManager
-from backend.processors import EventDataProcessor
+from backend.processors import EventDataProcessor, event_plot_window
 
 _DATA_EXTS   = ('.csv', '.txt')
 _WINDOW_FMT  = '%Y-%m-%d %H:%M'
-_WINDOW_PAD  = timedelta(minutes=30)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,22 +76,6 @@ def _data_files(folder: str) -> list:
         return []
     return sorted(os.path.join(folder, f) for f in os.listdir(folder)
                   if f.lower().endswith(_DATA_EXTS))
-
-
-def _floor_30(dt: datetime) -> datetime:
-    return dt.replace(minute=0 if dt.minute < 30 else 30, second=0, microsecond=0)
-
-
-def _ceil_30(dt: datetime) -> datetime:
-    f = _floor_30(dt)
-    return f if f == dt else f + timedelta(minutes=30)
-
-
-def _event_window(tasks) -> tuple:
-    """Plot window = first event start − 30 min … last event end + 30 min, on 30-min marks."""
-    lo = min(t.start_time for t in tasks) - _WINDOW_PAD
-    hi = max(t.end_time   for t in tasks) + _WINDOW_PAD
-    return _floor_30(lo), _ceil_30(hi)
 
 
 def _parse_window_value(text):
@@ -142,7 +125,7 @@ def wizard_tab():
 
     step1 = _step_card(1, "Test schedule (events)", [
         _path_row('wz-event-path', 'wz-browse-event',
-                  'Select the event / test-schedule CSV…', s.get('wz_event_path', '')),
+                  'Select the test schedule (.csv or .xlsx)…', s.get('wz_event_path', '')),
         html.Div(id='wz-event-info', className="small text-muted mb-2"),
         dbc.Row([
             dbc.Col(dbc.Label("Plot from", className="small mb-0"), width='auto'),
@@ -226,7 +209,7 @@ def register_wizard_callbacks(app, state):
 
     # ── Browse buttons (same Flask picker endpoints as the Advanced tabs) ────
     for btn_id, inp_id, url in [
-        ('wz-browse-event',  'wz-event-path',    '/api/pick-file?kind=csv&save=false'),
+        ('wz-browse-event',  'wz-event-path',    '/api/pick-file?kind=events&save=false'),
         ('wz-browse-data',   'wz-data-folder',   '/api/pick-folder?title=Select%20Data%20Folder'),
         ('wz-browse-output', 'wz-output-folder', '/api/pick-folder?title=Select%20Output%20Folder'),
     ]:
@@ -263,7 +246,7 @@ def register_wizard_callbacks(app, state):
                     _bad("invalid schedule"), no_update, no_update)
         save_settings(wz_event_path=path)
         tasks  = proc.get_tasks()
-        lo, hi = _event_window(tasks)
+        lo, hi = event_plot_window(tasks)
         ids    = sorted({t.display_id for t in tasks})
         info   = (f"{len(tasks)} events ({', '.join(ids[:12])}{'…' if len(ids) > 12 else ''}) · "
                   f"{min(t.start_time for t in tasks):%d %b %H:%M} → "
@@ -484,8 +467,10 @@ def register_wizard_callbacks(app, state):
                 f"✓ Done — {n_ok} image(s) saved to {r['out_folder']}")
         if r.get('errors'):
             head += f"  ({r['errors']} failed — see the batch log in Advanced.)"
+        warn = [html.Div(f"⚠ {w}", className="small") for w in r.get('warnings', [])]
         return dbc.Alert([
             html.Div(head, className="mb-2"),
+            *warn,
             dbc.Button("📂 Open folder", id='wz-open-folder', color='secondary', size='sm',
                        className='me-2'),
             dbc.Button("📑 Build PowerPoint", id='wz-build-ppt', color='primary', size='sm',
@@ -494,7 +479,7 @@ def register_wizard_callbacks(app, state):
                    href='/api/wizard/zip', download=True),
             html.Div(id='wz-ppt-status', className="mt-2"),
             dcc.Interval(id='wz-ppt-interval', interval=1000, disabled=True),
-        ], color='success' if not r.get('errors') and not r.get('stopped') else 'warning')
+        ], color='success' if not (r.get('errors') or r.get('stopped') or warn) else 'warning')
 
     @app.callback(
         Output('wz-ppt-status', 'children', allow_duplicate=True),

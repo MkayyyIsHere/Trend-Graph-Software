@@ -18,6 +18,7 @@ from flask import jsonify, request as flask_request
 _EXT_MAP = {
     'json':   [('JSON', '*.json'), ('All', '*.*')],
     'csv':    [('CSV/TXT', '*.csv *.txt'), ('CSV', '*.csv'), ('TXT', '*.txt'), ('All', '*.*')],
+    'events': [('Schedule (CSV / Excel)', '*.csv *.xlsx *.xlsm *.xls'), ('All', '*.*')],
     'data':   [('Tab/CSV', '*.txt *.csv'), ('All', '*.*')],
     'png':    [('Image', '*.png *.jpg'), ('All', '*.*')],
     'pptx':   [('PowerPoint', '*.pptx'), ('All', '*.*')],
@@ -26,6 +27,7 @@ _EXT_MAP = {
 _TITLE_MAP = {
     'json':   'Select JSON Config File',
     'csv':    'Select Event / Task CSV',
+    'events': 'Select Test Schedule (CSV / Excel)',
     'data':   'Select Series Data File',
     'png':    'Select Image File',
     'pptx':   'Select PowerPoint Template',

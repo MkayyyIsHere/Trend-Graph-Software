@@ -147,7 +147,7 @@ def register_callbacks(app, state, temp_dir: str):
     # ── File Browse buttons → Flask file-picker endpoint (clientside) ────────
     _file_browse = [
         ('btn-browse-gantt',    'gantt-config-path',  'json',   False),
-        ('btn-browse-event',    'event-file-path',    'csv',    False),
+        ('btn-browse-event',    'event-file-path',    'events', False),
         ('btn-browse-config',   'plot-config-path',   'json',   False),
         ('btn-browse-series',   'series-file-path',   'data',   False),
         ('btn-browse-export',   'export-output-path', 'export', True),
