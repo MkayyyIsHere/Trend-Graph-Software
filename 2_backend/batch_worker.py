@@ -19,6 +19,18 @@ from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
 from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, DEFAULT_AESTHETICS_PATH, RESERVED_CONFIG_FILENAMES
 
+# kaleido options for every export. MathJax is off: charts use no LaTeX, and
+# kaleido would otherwise fetch it from a CDN on each render (slow or failing
+# on offline / proxied PCs). plotly.js comes from the local plotly package.
+KALEIDO_OPTS = {'mathjax': False}
+
+
+def render_png(fig, width: int, height: int) -> bytes:
+    """One-off PNG render (single-chart tab) with the same kaleido options as batches."""
+    return kaleido.calc_fig_sync(
+        fig, opts={'format': 'png', 'width': width, 'height': height, 'scale': 1},
+        kopts=KALEIDO_OPTS)
+
 
 def run_batch(
     config_files:   List[str],
@@ -74,16 +86,34 @@ def run_batch(
     # avoids the "Couldn't close or kill browser subprocess" error that
     # occurs when multiple threads each try to spawn+destroy their own
     # browser (especially on Python 3.14).
-    kaleido.start_sync_server(silence_warnings=True)
+    try:
+        kaleido.start_sync_server(silence_warnings=True, **KALEIDO_OPTS)
+    except Exception as e:
+        reason = ("Could not start the image renderer — it needs Microsoft Edge or "
+                  f"Google Chrome installed. ({e})")
+        blog(f"{ts()} ABORTED — {reason}")
+        on_done({'failed': True, 'reason': reason})
+        return
     blog(f"{ts()} Kaleido server started (shared browser process)")
+
+    # Whatever happens, report back once — otherwise the UI waits forever.
+    reported = []
+
+    def _report(result):
+        reported.append(True)
+        on_done(result)
 
     try:
         _run_batch_body(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
-            on_done, override_chart, ts, _batch_start, aesthetics_path,
+            _report, override_chart, ts, _batch_start, aesthetics_path,
             axis_overrides, x_window, system, units,
         )
+    except Exception as e:
+        blog(f"{ts()} ABORTED — unexpected error: {e}\n{traceback.format_exc()}")
+        if not reported:
+            _report({'failed': True, 'reason': f"Unexpected error: {e}"})
     finally:
         kaleido.stop_sync_server(silence_warnings=True)
         blog(f"{ts()} Kaleido server stopped")
@@ -135,8 +165,8 @@ def _run_batch_body(
     # Load event/task data ONCE — shared across all workers (read-only)
     event_proc = EventDataProcessor(logger=logger)
     if not event_proc.load_csv(event_file):
-        blog(f"{ts()} ABORTED — failed to load event CSV")
-        on_done({'failed': True})
+        blog(f"{ts()} ABORTED — failed to load the schedule: {event_proc.error}")
+        on_done({'failed': True, 'reason': f"The schedule could not be read: {event_proc.error}"})
         return
     tasks = event_proc.get_tasks()
     blog(f"{ts()} Events loaded: {len(tasks)} tasks")
@@ -333,6 +363,7 @@ def _run_batch_body(
         'done':       done_count,
         'total':      total,
         'errors':     len(errors),
+        'error_messages': [e.splitlines()[0] for e in errors],   # no tracebacks
         'out_folder': out_folder,
         # Successful outputs in work order (data file × config order) — used
         # by the PPT builder so slide order is deterministic.

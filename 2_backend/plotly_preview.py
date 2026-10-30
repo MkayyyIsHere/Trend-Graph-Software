@@ -478,7 +478,10 @@ def build_plotly_figure(config: ConfigManager,
         plot_bgcolor=bg_color,
         paper_bgcolor=bg_color,
         hovermode='x unified',
-        showlegend=True,
+        # Images carry only the drawn legend table (annotation below); Plotly's
+        # own legend sat underneath it and showed through as faint ghost names.
+        # The interactive preview keeps it so series can be toggled by clicking.
+        showlegend=not (width and height),
         legend=dict(
             orientation='v',
             x=leg_x, xanchor='left',

@@ -130,6 +130,14 @@ def _path_row(input_id, browse_id, placeholder, value):
     ], size='sm', className="mb-2")
 
 
+def _details(lines, label):
+    """Collapsed list of messages ([] when there are none)."""
+    if not lines:
+        return []
+    return [html.Details([html.Summary(f"⚠ {len(lines)} {label}", className="text-warning"),
+                          *[html.Div(l, className="small") for l in lines]])]
+
+
 def _ok(text):   return dbc.Badge(f"✓ {text}", color="success")
 def _todo(text): return dbc.Badge(text, color="secondary")
 def _bad(text):  return dbc.Badge(f"✗ {text}", color="danger")
@@ -298,8 +306,12 @@ def register_wizard_callbacks(app, state):
             return "", _bad("file not found"), no_update, no_update
         proc = EventDataProcessor()
         if not proc.load_csv(path) or not proc.get_tasks():
-            return ("Could not read any events — check the columns "
-                    "(Test Description, Test ID, Date, Start Time, End Time).",
+            return (html.Div([
+                        html.Div(proc.error or "Could not read any events.", className="text-danger"),
+                        html.Div("Expected columns: Test Description, Test ID, Date, Start Time, "
+                                 "End Time (Normalized Time optional)."),
+                        *_details([m for m in proc.problems if m != proc.error
+                                   and not m.startswith('Error loading')], "row problem(s)")]),
                     _bad("invalid schedule"), no_update, no_update)
         save_settings(wz_event_path=path)
         tasks  = proc.get_tasks()
@@ -308,6 +320,7 @@ def register_wizard_callbacks(app, state):
         info   = (f"{len(tasks)} events ({', '.join(ids[:12])}{'…' if len(ids) > 12 else ''}) · "
                   f"{min(t.start_time for t in tasks):%d %b %H:%M} → "
                   f"{max(t.end_time for t in tasks):%d %b %H:%M}")
+        info = html.Div([info, *_details(proc.problems, "row(s) skipped or fixed — click to see")])
         return info, _ok(f"{len(tasks)} events"), lo.strftime(_WINDOW_FMT), hi.strftime(_WINDOW_FMT)
 
     # ── Step 3: PowerPoint template (remembered; empty = built-in) ───────────
@@ -593,19 +606,19 @@ def register_wizard_callbacks(app, state):
         if not r:
             raise PreventUpdate
         if r.get('failed'):
-            return dbc.Alert("The run failed — the event file could not be read. "
-                             "Open Advanced → Single Chart & Batch to see the log.", color="danger")
+            return dbc.Alert(f"The run failed — {r.get('reason') or 'see the batch log in Advanced'}",
+                             color="danger")
         n_ok = len(r.get('outputs', []))
         head = (f"⚠ Stopped — {n_ok} image(s) saved." if r.get('stopped') else
                 f"✓ Done — {n_ok} image(s) saved to {r['out_folder']}")
-        if r.get('errors'):
-            head += f"  ({r['errors']} failed — see the batch log in Advanced.)"
+        fails = _details(r.get('error_messages', []), "chart(s) failed — click for the reasons")
         notes = [html.Div(f"⚠ {w}", className="small") for w in r.get('warnings', [])]
         warn  = notes[:5] + ([html.Details([html.Summary(f"…{len(notes) - 5} more note(s)",
                                                         className="small"), *notes[5:]])]
                              if len(notes) > 5 else [])
         return dbc.Alert([
             html.Div(head, className="mb-2"),
+            *fails,
             *warn,
             dbc.Button("📂 Open folder", id='wz-open-folder', color='secondary', size='sm',
                        className='me-2'),

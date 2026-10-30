@@ -18,7 +18,7 @@ from backend.processors import EventDataProcessor
 from backend.formats import ChartSkipped, DataFileError, load_chart_data
 from backend.units import AUTO, apply_display_unit
 from backend.plotly_preview import build_plotly_figure
-from backend.batch_worker import run_batch as _run_batch_worker
+from backend.batch_worker import render_png, run_batch as _run_batch_worker
 from backend.ppt_builder import PPTBuilder
 
 try:
@@ -473,8 +473,7 @@ def register_callbacks(app, state, temp_dir: str):
                 width=width_px, height=height_px,
             )
             # Store PNG bytes for any downstream consumers (e.g. PPT builder)
-            state.last_png_bytes = fig.to_image(
-                format='png', width=width_px, height=height_px, scale=1)
+            state.last_png_bytes = render_png(fig, width_px, height_px)
         except Exception as e:
             state.logger.error(f"Chart generation failed: {e}")
             return (dbc.Alert("Chart generation failed — see log.", color="danger"), *_fail)
@@ -518,8 +517,8 @@ def register_callbacks(app, state, temp_dir: str):
                 state.config, state.last_all_data_points, state.last_tasks,
                 state.gantt_config, width=width_px, height=height_px,
             )
-            fig.write_image(out_path, format='png',
-                            width=width_px, height=height_px, scale=1)
+            with open(out_path, 'wb') as fh:
+                fh.write(render_png(fig, width_px, height_px))
             state.logger.info(f"Chart exported: {out_path}")
             return dbc.Alert(f"✓ Saved: {out_path}", color="success")
         except Exception as e:

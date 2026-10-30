@@ -27,7 +27,7 @@ Format: version — date — what changed
 ## [1.0.5] - 2026-05-28
 - Update on Y-axis appearance
 
-## [1.1.0] - unreleased
+## [1.1.0] - 2026-10-30
 - New 🚀 Quick Run tab (default): Events → Data → Generate & Export in one page
 - Plot time window is derived from the event schedule (first start → last end); no more editing x_min/x_max
 - Per-chart Y min / Y max (or Auto) editable on the Quick Run tab, remembered between runs
@@ -63,3 +63,9 @@ Format: version — date — what changed
   logged every 10 s / 1 min draw as lines instead of separate points
 - Auto Y fits the data inside the plot window rather than the whole file
 - PowerPoint template picker on the Quick Run tab (remembered, falls back to the built-in one)
+- Clearer errors: schedule problems name the missing header / unreadable rows (listed per row);
+  failed charts list their reasons in the results panel; a run that cannot start (schedule
+  unreadable, no Edge/Chrome for image export) says why instead of hanging
+- Exported images no longer show faint duplicate series names behind the legend
+- Image export no longer fetches MathJax from the internet (works offline / behind a proxy)
+- build.py works from any folder, bundles kaleido/choreographer files; .exe needs nothing alongside it

@@ -1,11 +1,12 @@
 """
-build.py  —  run this from the repo root to produce the .exe
-Usage:  python build.py
+build.py  —  run this from 9_dev_notes/ to produce the .exe
+Usage:  cd 9_dev_notes && python build.py
 Output: 8_dist/TrendGraph_v<version>.exe
 
-NOTE: 5_configs and 6_templates are NOT bundled in the .exe.
-Distribute them separately on SharePoint as a zip alongside the .exe.
-Users select their config folder at runtime via the app's folder picker.
+The .exe is self-contained: default charts, colours, Gantt config and the
+PowerPoint template are bundled from 3_utils/defaults. 5_configs / 6_templates
+are optional overrides picked inside the app — nothing else needs shipping.
+Image export uses Microsoft Edge or Google Chrome already on the PC.
 """
 
 import subprocess
@@ -13,16 +14,19 @@ import shutil
 import sys
 from pathlib import Path
 
-# ── Read version ──────────────────────────────────────────────────
-VERSION = Path("Version.txt").read_text().strip()
+# ── Paths (independent of the folder build.py is run from) ────────
+HERE     = Path(__file__).resolve().parent          # 9_dev_notes
+REPO     = HERE.parent
+VERSION  = (HERE / "Version.txt").read_text().strip()
 APP_NAME = f"TrendGraph_v{VERSION}"
-DIST_DIR = Path("../8_dist")
+DIST_DIR = REPO / "8_dist"
 
 print(f"Building {APP_NAME} ...")
 
-REPO_ROOT = str(Path("..").resolve())
+REPO_ROOT = str(REPO)
 
 SPEC_CONTENT = """# -*- mode: python ; coding: utf-8 -*-
+import os
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 block_cipher = None
@@ -51,22 +55,26 @@ hidden += collect_submodules('pptx')
 hidden += collect_submodules('PIL')
 hidden += collect_submodules('openpyxl')      # Excel test schedules
 hidden += collect_submodules('kaleido')
+hidden += collect_submodules('choreographer')   # drives Edge/Chrome for kaleido
+hidden += collect_submodules('logistro')
 
 # ── Source folders ─────────────────────────────────────────────────
 # 3_utils/defaults (default charts, aesthetics, gantt colours, PPT template)
 # is bundled via 3_utils. 5_configs / 6_templates are optional user overrides.
 datas = [
-    ('1_app',     '1_app'),
-    ('2_backend', '2_backend'),
-    ('3_utils',   '3_utils'),
-    ('4_assets',  '4_assets'),
+    (os.path.join(REPO_ROOT, '1_app'),     '1_app'),
+    (os.path.join(REPO_ROOT, '2_backend'), '2_backend'),
+    (os.path.join(REPO_ROOT, '3_utils'),   '3_utils'),
+    (os.path.join(REPO_ROOT, '4_assets'),  '4_assets'),
 ]
 datas += collect_data_files('dash')
 datas += collect_data_files('dash_bootstrap_components')
-datas += collect_data_files('plotly')
+datas += collect_data_files('plotly')         # includes plotly.min.js used by kaleido
+datas += collect_data_files('kaleido')        # kaleido_scopes.js
+datas += collect_data_files('choreographer')
 
 a = Analysis(
-    ['main.py'],
+    [os.path.join(REPO_ROOT, 'main.py')],
     pathex=[REPO_ROOT],
     binaries=[],
     datas=datas,
@@ -106,7 +114,7 @@ exe = EXE(
 )
 """.replace("REPO_ROOT", repr(REPO_ROOT)).replace("APP_NAME", repr(APP_NAME))
 
-spec_path = Path(f"{APP_NAME}.spec")
+spec_path = HERE / f"{APP_NAME}.spec"
 spec_path.write_text(SPEC_CONTENT, encoding="utf-8")
 print(f"Written {spec_path}")
 
@@ -128,7 +136,7 @@ result = subprocess.run(
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
         "--distpath", str(DIST_DIR),
-        "--workpath", "build",
+        "--workpath", str(HERE / "build"),
         str(spec_path),
     ],
     check=False
@@ -139,10 +147,9 @@ if result.returncode != 0:
     sys.exit(1)
 
 # ── Clean up PyInstaller leftovers ────────────────────────────────
-shutil.rmtree("build", ignore_errors=True)
+shutil.rmtree(HERE / "build", ignore_errors=True)
 spec_path.unlink(missing_ok=True)
 
 print(f"\nDone!  ->  {DIST_DIR / APP_NAME}.exe")
-print("Next steps:")
-print(f"  1. Copy 8_dist/TrendGraph_v{VERSION}.exe  → SharePoint/Releases/latest/")
-print("  2. Copy 5_configs/ + 6_templates/          → SharePoint/Releases/latest/configs.zip")
+print("Next step:")
+print(f"  Copy 8_dist/TrendGraph_v{VERSION}.exe -> SharePoint/Releases/latest/  (no config zip needed)")

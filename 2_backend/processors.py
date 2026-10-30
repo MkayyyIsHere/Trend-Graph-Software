@@ -37,19 +37,26 @@ class EventDataProcessor:
     def __init__(self, logger=None):
         self.logger = logger
         self.tasks: List[Task] = []
+        self.error: str = ''             # why load_csv() returned False, for the UI
+        self.problems: List[str] = []    # rows skipped / patched, for the UI
 
     def _log(self, msg: str, level: str = 'INFO'):
+        if level in ('WARNING', 'ERROR'):
+            self.problems.append(msg)
         if self.logger:
             getattr(self.logger, level.lower())(msg)
 
     def load_csv(self, file_path: str) -> bool:
         """Load a schedule from CSV or Excel (name kept for existing callers)."""
         try:
-            self.tasks = []
+            self.tasks, self.error, self.problems = [], '', []
             df, header_row = self._read_table(file_path)
             if df is None:
-                self._log("Event file has no 'Test Description' / 'Date' / 'Start Time' "
-                          "header row", 'ERROR')
+                self.error = ("No header row with the columns Test Description, Date and "
+                              "Start Time was found in the first 20 rows"
+                              + (" of any sheet." if file_path.lower().endswith(
+                                  ('.xlsx', '.xlsm', '.xls')) else "."))
+                self._log(self.error, 'ERROR')
                 return False
             self._log(f"Event file loaded: {file_path}")
             self._log(f"Processing {len(df)} rows")
@@ -57,8 +64,15 @@ class EventDataProcessor:
                 # row_num = spreadsheet row number, for messages
                 self._process_row(row, idx + header_row + 2)
             self._log(f"Successfully processed {len(self.tasks)} valid tasks")
+            if not self.tasks:
+                self.error = "The header was found but no row had a readable date and times."
             return True
+        except PermissionError:
+            self.error = "The file is open in another program (e.g. Excel) — close it and try again."
+            self._log(self.error, 'ERROR')
+            return False
         except Exception as e:
+            self.error = f"Could not read the file: {e}"
             self._log(f"Error loading event file: {e}", 'ERROR')
             return False
 
