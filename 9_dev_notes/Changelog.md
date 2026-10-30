@@ -66,6 +66,9 @@ Format: version — date — what changed
 - Clearer errors: schedule problems name the missing header / unreadable rows (listed per row);
   failed charts list their reasons in the results panel; a run that cannot start (schedule
   unreadable, no Edge/Chrome for image export) says why instead of hanging
+- FIX: a chart that could not be saved (e.g. PNG open in a viewer) froze the whole run; the image
+  renderer is now app-managed (serialised, per-chart timeout, auto-restart) and a locked file
+  only fails that one chart with a clear message
 - Exported images no longer show faint duplicate series names behind the legend
 - Image export no longer fetches MathJax from the internet (works offline / behind a proxy)
 - build.py works from any folder, bundles kaleido/choreographer files; .exe needs nothing alongside it

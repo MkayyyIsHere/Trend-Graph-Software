@@ -9,28 +9,14 @@ from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Callable
 
-import kaleido
-
 from backend.processors import EventDataProcessor, event_plot_window
 from backend.formats import ChartSkipped, DataFileError, load_chart_data, metric_peak
 from backend.units import AUTO, apply_display_unit, base_unit
+from backend.renderer import PngRenderer, RenderError
 from backend.config import ConfigManager, GanttConfigManager
 from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
 from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, DEFAULT_AESTHETICS_PATH, RESERVED_CONFIG_FILENAMES
-
-# kaleido options for every export. MathJax is off: charts use no LaTeX, and
-# kaleido would otherwise fetch it from a CDN on each render (slow or failing
-# on offline / proxied PCs). plotly.js comes from the local plotly package.
-KALEIDO_OPTS = {'mathjax': False}
-
-
-def render_png(fig, width: int, height: int) -> bytes:
-    """One-off PNG render (single-chart tab) with the same kaleido options as batches."""
-    return kaleido.calc_fig_sync(
-        fig, opts={'format': 'png', 'width': width, 'height': height, 'scale': 1},
-        kopts=KALEIDO_OPTS)
-
 
 def run_batch(
     config_files:   List[str],
@@ -81,20 +67,17 @@ def run_batch(
             blog(f"  Resolution  : {res[0]}×{res[1]} px @ {dpi} DPI (from UI settings)")
     blog("=" * 55)
 
-    # Start one persistent kaleido browser process for the entire batch.
-    # All workers share this single server via its internal queue — this
-    # avoids the "Couldn't close or kill browser subprocess" error that
-    # occurs when multiple threads each try to spawn+destroy their own
-    # browser (especially on Python 3.14).
+    # One headless browser for the whole batch, shared by all workers
+    # (renders are serialised inside; see backend/renderer.py).
     try:
-        kaleido.start_sync_server(silence_warnings=True, **KALEIDO_OPTS)
-    except Exception as e:
+        renderer = PngRenderer()
+    except BaseException as e:   # noqa: BLE001 — browser missing / failed to launch
         reason = ("Could not start the image renderer — it needs Microsoft Edge or "
                   f"Google Chrome installed. ({e})")
         blog(f"{ts()} ABORTED — {reason}")
         on_done({'failed': True, 'reason': reason})
         return
-    blog(f"{ts()} Kaleido server started (shared browser process)")
+    blog(f"{ts()} Image renderer started (shared browser process)")
 
     # Whatever happens, report back once — otherwise the UI waits forever.
     reported = []
@@ -108,15 +91,15 @@ def run_batch(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
             _report, override_chart, ts, _batch_start, aesthetics_path,
-            axis_overrides, x_window, system, units,
+            axis_overrides, x_window, system, units, renderer,
         )
     except Exception as e:
         blog(f"{ts()} ABORTED — unexpected error: {e}\n{traceback.format_exc()}")
         if not reported:
             _report({'failed': True, 'reason': f"Unexpected error: {e}"})
     finally:
-        kaleido.stop_sync_server(silence_warnings=True)
-        blog(f"{ts()} Kaleido server stopped")
+        renderer.close()
+        blog(f"{ts()} Image renderer stopped")
 
 
 def _run_batch_body(
@@ -139,8 +122,9 @@ def _run_batch_body(
     x_window:       tuple = None,
     system:         str = '3P4W',
     units:          dict = None,
+    renderer:       PngRenderer = None,
 ):
-    """Inner body of run_batch — called after the kaleido server is live."""
+    """Inner body of run_batch — called after the image renderer is live."""
     blog = batch_log.append
     if ts is None:
         ts = lambda: datetime.now().strftime("[%H:%M:%S]")  # noqa: E731
@@ -293,17 +277,11 @@ def _run_batch_body(
             fig = build_plotly_figure(cfg, all_dp, tasks, gantt_copy,
                                       width=width_px, height=height_px)
 
-            # Use the global kaleido server (started once for the whole
-            # batch) — avoids per-call browser spawn/teardown which causes
-            # "Couldn't close or kill browser subprocess" under parallelism.
-            kaleido.write_fig_sync(
-                fig,
-                out_path,
-                opts={"format": "png", "width": width_px,
-                      "height": height_px, "scale": 1},
-            )
+            renderer.save(fig, out_path, width_px, height_px)
             return out_name, None, None   # success
 
+        except RenderError as e:
+            return out_name, f"FAILED: {out_name} — {e}", None
         except Exception as e:
             return out_name, f"ERROR: {out_name} — {e}\n{traceback.format_exc()}", None
 

@@ -18,7 +18,8 @@ from backend.processors import EventDataProcessor
 from backend.formats import ChartSkipped, DataFileError, load_chart_data
 from backend.units import AUTO, apply_display_unit
 from backend.plotly_preview import build_plotly_figure
-from backend.batch_worker import render_png, run_batch as _run_batch_worker
+from backend.batch_worker import run_batch as _run_batch_worker
+from backend.renderer import render_png
 from backend.ppt_builder import PPTBuilder
 
 try:
