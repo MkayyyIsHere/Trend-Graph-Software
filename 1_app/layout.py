@@ -13,6 +13,7 @@ except ImportError:
     _PPTX_AVAILABLE = False
 
 from app.config_manager_layout import config_manager_tab
+from app.wizard import wizard_tab
 
 _LOG_STYLE_BASE = {
     'overflowY': 'auto', 'fontSize': '11px',
@@ -107,7 +108,7 @@ def _chart_tab():
         'Batch Progress Log', bg_color='#1e2030', height='220px',
     )
 
-    return dbc.Tab(label="📊 Chart Plotter", tab_id="tab-chart", children=[
+    return dbc.Tab(label="📊 Single Chart & Batch", tab_id="tab-chart", children=[
         dbc.Container(fluid=True, children=[
 
             # ── Gantt / Event ────────────────────────────────────────────────
@@ -402,15 +403,18 @@ def build_layout():
     """Return the complete Dash 1_app layout."""
     header = dbc.Navbar(
         dbc.Container([
-            html.Span("📊 Composite Data & Gantt Plotter", className="navbar-brand fw-bold"),
-            html.Small(" — Dash Edition", className="text-muted"),
+            html.Span("📊 Trend Graph", className="navbar-brand fw-bold"),
+            html.Small("Power quality trend charts from analyser exports",
+                       className="text-white-50"),
         ], fluid=True),
         color="primary", dark=True, className="mb-3",
     )
     return html.Div([
         html.Div(id='_css-placeholder', style={'display': 'none'}),
         header,
-        dbc.Tabs(id='main-tabs', active_tab='tab-chart', className="mb-3 px-3", children=[
+        dbc.Tabs(id='main-tabs', active_tab='tab-wizard', className="mb-3 px-3", children=[
+            wizard_tab(),
+            # Advanced tools — full control over individual steps and configs
             _chart_tab(), _preview_tab(), _ppt_tab(), config_manager_tab(),
         ]),
         _settings_modal(),

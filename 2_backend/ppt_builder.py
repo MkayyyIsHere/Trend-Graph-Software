@@ -132,11 +132,13 @@ class PPTBuilder:
 
     def build(self, image_folder, template_path, output_path,
               auto_resize_slide=True, slide_dpi=96,
-              layout_index=None, progress_callback=None):
+              layout_index=None, progress_callback=None, images=None):
+        """images: optional ordered list of filenames in image_folder; when
+        omitted, every image in the folder is used (oldest first)."""
         if not _PPTX_AVAILABLE:
             self._log("python-pptx not installed.", 'ERROR')
             return None
-        images = self.collect_images(image_folder)
+        images = images or self.collect_images(image_folder)
         if not images:
             self._log(f"No PNG/JPG images found in: {image_folder}", 'ERROR')
             return None

@@ -40,7 +40,8 @@ class DashApp:
             title='Composite Data Plotter',
             suppress_callback_exceptions=True,
         )
-        self._app.layout = build_layout()
+        # Callable layout → rebuilt per page load, so remembered settings are current.
+        self._app.layout = build_layout
 
         register_callbacks(self._app, self._state, self._temp_dir)
         register_routes(self._app.server, self._dispatcher)

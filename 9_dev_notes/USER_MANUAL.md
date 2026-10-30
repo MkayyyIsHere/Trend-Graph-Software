@@ -7,6 +7,7 @@
 
 ## Table of Contents
 
+- [Quick Run (recommended)](#quick-run-recommended)
 1. [Overview](#1-overview)
 2. [Getting Started](#2-getting-started)
    - 2.1 [What You Need](#21-what-you-need)
@@ -36,6 +37,19 @@
    - 8.1 [What Is the Config Manager?](#81-what-is-the-config-manager)
    - 8.2 [Viewing and Editing a Config](#82-viewing-and-editing-a-config)
 9. [Troubleshooting & FAQ](#9-troubleshooting--faq)
+
+---
+
+## Quick Run (recommended)
+
+The **🚀 Quick Run** tab opens first and covers a normal job on one page. No config folder is needed, because the default charts, colours and PowerPoint template are built into the app.
+
+1. **Test schedule:** pick your event CSV. The plot window (*Plot from / to*) is worked out from the first and last event, with 30 minutes either side. You can edit it if needed.
+2. **Analyser data:** pick the folder that holds your analyser exports. Each file is listed.
+3. **Charts & output:** pick an output folder, tick the charts you want, and set **Y min / Y max** per chart. Switch on **Auto Y** to fit the axis to the data.
+4. Click **▶ Generate charts**. When it finishes you can **Open folder**, **Build PowerPoint** or **Download ZIP**.
+
+Everything you choose (folders, event file, charts, Y limits) is remembered for next time. Click **↺ Reset Y limits** to go back to the defaults. The other tabs are still available for advanced use, such as a custom config folder in Config Manager.
 
 ---
 

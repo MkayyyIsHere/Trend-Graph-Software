@@ -26,6 +26,7 @@ except ImportError:
 
 from app.config_manager_callbacks import register_config_manager_callbacks
 from app.batch_profile_callbacks import register_batch_profile_callbacks
+from app.wizard import register_wizard_callbacks
 from backend.batch_profile import BatchProfileManager
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -106,7 +107,7 @@ class _RelayLogger:
     def debug(self,   m): self._cb(f"[DEBUG]   {m}")
 
 
-def _ppt_thread(state, img_folder, template, out_path, auto_resize, slide_dpi):
+def _ppt_thread(state, img_folder, template, out_path, auto_resize, slide_dpi, images=None):
     plog = state.ppt_log_lines.append
 
     def _progress(cur, total, fname):
@@ -119,6 +120,7 @@ def _ppt_thread(state, img_folder, template, out_path, auto_resize, slide_dpi):
             auto_resize_slide=auto_resize,
             slide_dpi=slide_dpi,
             progress_callback=_progress,
+            images=images,
         )
         if result:
             state.last_pptx_path = result
@@ -918,6 +920,7 @@ def register_callbacks(app, state, temp_dir: str):
     # ── Config Manager ────────────────────────────────────────────────────────
     register_batch_profile_callbacks(app, state)
     register_config_manager_callbacks(app, state)
+    register_wizard_callbacks(app, state)
 
     # ── Auto-dismiss status messages ──────────────────────────────────────────
     # When a status message appears, clear it after 4 seconds by writing ""

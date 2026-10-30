@@ -5,7 +5,7 @@
 import os
 import threading
 import traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Callable
 
@@ -32,6 +32,8 @@ def run_batch(
     on_done:        Callable,      # called with result dict when finished
     override_chart: dict = None,   # UI-applied chart overrides (dpi, resolution_px, figure_size)
     aesthetics_path: str = None,   # path to aesthetics.json; falls back to DEFAULT_AESTHETICS_PATH
+    axis_overrides: dict = None,   # {config filename: {y_min, y_max, ...}}; None value = auto
+    x_window:       tuple = None,  # (x_min, x_max) strings applied to every chart
 ):
     """
     Runs the full batch render in a background thread.
@@ -75,6 +77,7 @@ def run_batch(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
             on_done, override_chart, ts, _batch_start, aesthetics_path,
+            axis_overrides, x_window,
         )
     finally:
         kaleido.stop_sync_server(silence_warnings=True)
@@ -97,6 +100,8 @@ def _run_batch_body(
     ts:             Callable = None,
     _batch_start:   datetime = None,
     aesthetics_path: str = None,
+    axis_overrides: dict = None,
+    x_window:       tuple = None,
 ):
     """Inner body of run_batch — called after the kaleido server is live."""
     blog = batch_log.append
@@ -139,6 +144,7 @@ def _run_batch_body(
 
     done_count = 0
     errors     = []
+    succeeded  = set()
     lock       = threading.Lock()
 
     def _render_one(item):
@@ -156,6 +162,17 @@ def _run_batch_body(
         # even though each worker reloads the config fresh from disk.
         if override_chart:
             cfg.config.setdefault('chart', {}).update(override_chart)
+
+        # Run-level axis overrides from the wizard: time window for every
+        # chart, then per-chart Y limits (None = auto-fit to data).
+        axis = cfg.config.setdefault('axis', {})
+        if x_window:
+            axis['x_min'], axis['x_max'] = x_window
+        for k, v in ((axis_overrides or {}).get(cfg_name) or {}).items():
+            if v is None:
+                axis.pop(k, None)
+            else:
+                axis[k] = v
 
         all_dp = []
         for sc in cfg.get_all_series_configs():
@@ -214,7 +231,10 @@ def _run_batch_body(
                 cancelled = sum(1 for f in futures if f.cancel())
                 blog(f"  {cancelled} queued chart(s) cancelled")
 
-            out_name, err = future.result()
+            try:
+                out_name, err = future.result()
+            except CancelledError:
+                continue
             with lock:
                 done_count += 1
                 progress = f"[{done_count}/{total}]"
@@ -223,6 +243,7 @@ def _run_batch_body(
                     errors.append(err)
                 else:
                     blog(f"  {ts()} {progress} ✓ {out_name}")
+                    succeeded.add(out_name)
 
     blog("\n" + "=" * 55)
     saved   = done_count - len(errors)
@@ -249,4 +270,7 @@ def _run_batch_body(
         'total':      total,
         'errors':     len(errors),
         'out_folder': out_folder,
+        # Successful outputs in work order (data file × config order) — used
+        # by the PPT builder so slide order is deterministic.
+        'outputs':    [p for _, _, p, n in work_items if n in succeeded],
     })

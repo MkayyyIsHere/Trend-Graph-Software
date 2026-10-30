@@ -18,6 +18,7 @@
 import json
 import os
 import sys
+import threading
 
 # ---------------------------------------------------------------------------
 # Runtime root — works correctly in both PyCharm and PyInstaller .exe
@@ -50,6 +51,7 @@ def user_data_dir() -> str:
 
 
 _SETTINGS_FILE = 'settings.json'
+_SETTINGS_LOCK = threading.Lock()   # Dash callbacks run concurrently
 
 
 def load_settings() -> dict:
@@ -63,17 +65,20 @@ def load_settings() -> dict:
 
 def save_settings(**updates) -> None:
     """Merge `updates` into settings.json (best effort)."""
-    try:
-        data = load_settings()
-        data.update(updates)
-        with open(os.path.join(user_data_dir(), _SETTINGS_FILE), 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-    except Exception:
-        pass
+    with _SETTINGS_LOCK:
+        try:
+            data = load_settings()
+            if all(data.get(k) == v for k, v in updates.items()):
+                return
+            data.update(updates)
+            with open(os.path.join(user_data_dir(), _SETTINGS_FILE), 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+        except Exception:
+            pass
 
 
 DEFAULT_CONFIGS_DIR       = resource_path('charts')
-DEFAULT_AESTHETICS_PATH   = resource_path('aesthetics.json')
+DEFAULT_AESTHETICS_PATH   = resource_path('charts', 'aesthetics.json')
 DEFAULT_GANTT_CONFIG_PATH = resource_path('gantt.json')
 DEFAULT_PPT_TEMPLATE_PATH = resource_path('PQA_Template.pptx')
 

@@ -26,3 +26,12 @@ Format: version — date — what changed
 
 ## [1.0.5] - 2026-05-28
 - Update on Y-axis appearance
+
+## [1.1.0] - unreleased
+- New 🚀 Quick Run tab (default): Events → Data → Generate & Export in one page
+- Plot time window is derived from the event schedule (±30 min); no more editing x_min/x_max
+- Per-chart Y min / Y max (or Auto) editable on the Quick Run tab, remembered between runs
+- Default charts, colours and PPT template are bundled in the .exe — no config folder needed
+- Folders, event file and chart choices are remembered in %APPDATA%\TrendGraph\settings.json
+- After a run: Open folder, Build PowerPoint (slides in chart order) and Download ZIP
+- Existing tabs kept as advanced tools
