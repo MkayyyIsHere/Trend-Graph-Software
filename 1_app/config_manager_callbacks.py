@@ -8,6 +8,8 @@ from dash import Input, Output, State, ctx, html, no_update, ALL, MATCH
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
+from utils.constants import load_settings, save_settings
+
 from app.config_manager_layout import (
     COLOUR_PALETTES, CFG_TYPE_SERIES, CFG_TYPE_GANTT, CFG_TYPE_AESTHETICS,
     _series_row, _gantt_color_row, _palette_color_row,
@@ -21,26 +23,12 @@ _AESTHETICS_FILENAME   = 'aesthetics.json'
 _BATCH_PROFILE_FILENAME = 'batch_profile.json'
 _RESERVED = {_AESTHETICS_FILENAME, _BATCH_PROFILE_FILENAME}
 
-_SESSION_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'last_session.json')
-
 def _load_last_folder() -> str:
-    try:
-        if os.path.exists(_SESSION_FILE):
-            with open(_SESSION_FILE, encoding='utf-8') as f:
-                data = json.load(f)
-            folder = data.get('last_config_folder', '')
-            if folder and os.path.isdir(folder):
-                return folder
-    except Exception:
-        pass
-    return ''
+    folder = load_settings().get('last_config_folder', '')
+    return folder if folder and os.path.isdir(folder) else ''
 
 def _save_last_folder(folder: str) -> None:
-    try:
-        with open(_SESSION_FILE, 'w', encoding='utf-8') as f:
-            json.dump({'last_config_folder': folder}, f)
-    except Exception:
-        pass
+    save_settings(last_config_folder=folder)
 
 
 def _list_json_files(folder: str) -> list[str]:

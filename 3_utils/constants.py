@@ -10,12 +10,12 @@
 #       → here (constants.py)
 #
 # NOTE ON PATHS
-# 5_configs and 6_templates are NOT bundled inside the .exe.
-# The user selects their own config folder at runtime via the app's UI.
-# DEFAULT_CONFIGS_DIR and DEFAULT_AESTHETICS_PATH are left as empty strings
-# here — the app populates them from the user's folder picker selection.
+# Default configs, gantt colours and the PPT template are bundled inside the
+# .exe under 3_utils/defaults/ (read-only).  Anything the user changes is
+# stored in user_data_dir() (%APPDATA%/TrendGraph) so it survives restarts.
 # =============================================================================
 
+import json
 import os
 import sys
 
@@ -34,18 +34,48 @@ DASH_PORT = 8052
 DASH_HOST = "127.0.0.1"
 
 # ---------------------------------------------------------------------------
-# Paths
-#
-# These are intentionally empty — the user selects their config folder
-# at runtime via the app's folder picker. Any code that needs the config
-# path should receive it as a parameter rather than reading these defaults.
-#
-# In PyCharm (dev mode) you can temporarily set these to your local paths
-# for convenience, but do not commit hardcoded paths.
+# Bundled defaults (read-only) and user data (writable, persists)
 # ---------------------------------------------------------------------------
-DEFAULT_CONFIGS_DIR       = ""
-DEFAULT_AESTHETICS_PATH   = ""
-DEFAULT_GANTT_CONFIG_PATH = ""
+def resource_path(*parts: str) -> str:
+    """Path to a file shipped inside the app (works in dev and in the .exe)."""
+    return os.path.join(_RUNTIME_ROOT, '3_utils', 'defaults', *parts)
+
+
+def user_data_dir() -> str:
+    """Writable per-user folder (%APPDATA%/TrendGraph); created on first use."""
+    base = os.environ.get('APPDATA') or os.path.expanduser('~')
+    path = os.path.join(base, 'TrendGraph')
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+_SETTINGS_FILE = 'settings.json'
+
+
+def load_settings() -> dict:
+    try:
+        with open(os.path.join(user_data_dir(), _SETTINGS_FILE), encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_settings(**updates) -> None:
+    """Merge `updates` into settings.json (best effort)."""
+    try:
+        data = load_settings()
+        data.update(updates)
+        with open(os.path.join(user_data_dir(), _SETTINGS_FILE), 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
+
+
+DEFAULT_CONFIGS_DIR       = resource_path('charts')
+DEFAULT_AESTHETICS_PATH   = resource_path('aesthetics.json')
+DEFAULT_GANTT_CONFIG_PATH = resource_path('gantt.json')
+DEFAULT_PPT_TEMPLATE_PATH = resource_path('PQA_Template.pptx')
 
 # ---------------------------------------------------------------------------
 # Resolution presets  (labels only — actual values are tuples for the UI)

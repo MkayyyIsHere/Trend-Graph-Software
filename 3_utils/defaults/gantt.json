@@ -1,0 +1,39 @@
+{
+  "_description": "Shared Gantt/Event overlay config — applies to ALL data type plots (frequency, voltage, current, etc.)",
+  "_usage": "Load this file using the 'Browse Gantt Config...' button in the GUI. Settings here always override any gantt/gantt_colors sections in the data config.",
+  "gantt": {
+    "bar_alpha": 0.1,
+    "bar_height_ratio": 1.0,
+    "edge_color": "#000000",
+    "edge_width": 0.2
+  },
+  "gantt_colors": {
+    "HLT7": "#56b36d",
+    "HLT8": "#304cd9",
+    "HLT9": "#93a02c",
+    "HLT13": "#d62728",
+    "HLT14": "#9467bd",
+    "HLT15": "#8c564b",
+    "HLT16": "#e377c2",
+    "HLT17": "#7f7f7f",
+    "HLT18": "#39d5bb",
+    "HLT19": "#17becf",
+    "HLT20": "#1a9850",
+    "HLT21": "#d73027",
+    "HLT22": "#fee090",
+    "HLT23": "#4575b4",
+    "UNASSIGNED": "#808080",
+    "default_palette": [
+      "#1f77b4",
+      "#ff7f0e",
+      "#2ca02c",
+      "#d62728",
+      "#9467bd",
+      "#8c564b",
+      "#e377c2",
+      "#7f7f7f",
+      "#bcbd22",
+      "#17becf"
+    ]
+  }
+}

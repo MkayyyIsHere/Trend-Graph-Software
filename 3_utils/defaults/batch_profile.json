@@ -1,0 +1,10 @@
+{
+  "ordered_configs": [
+    "Active_Power.json",
+    "Power Factor.json",
+    "Voltage.json",
+    "Current.json",
+    "Frequency.json",
+    "THD Voltage.json"
+  ]
+}

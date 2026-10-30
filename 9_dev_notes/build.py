@@ -51,10 +51,9 @@ hidden += collect_submodules('pptx')
 hidden += collect_submodules('PIL')
 hidden += collect_submodules('kaleido')
 
-# ── Source folders only — configs and templates are external ──────
-# 5_configs and 6_templates are NOT bundled here.
-# They are distributed separately on SharePoint as a zip.
-# Users select their config folder at runtime via the folder picker.
+# ── Source folders ─────────────────────────────────────────────────
+# 3_utils/defaults (default charts, aesthetics, gantt colours, PPT template)
+# is bundled via 3_utils. 5_configs / 6_templates are optional user overrides.
 datas = [
     ('1_app',     '1_app'),
     ('2_backend', '2_backend'),
