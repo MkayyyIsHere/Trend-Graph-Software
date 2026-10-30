@@ -7,6 +7,8 @@ import re
 import textwrap as _textwrap
 from typing import Dict, List, Tuple
 
+import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 
 from backend.models import DataPoint, Task
@@ -67,6 +69,49 @@ def _x_tick_spacing(x_range):
     return 720 * 60_000, 120 * 60_000
 
 
+def _line_arrays(points: List[DataPoint], use_abs: bool = False, window=None,
+                 buckets: int = None):
+    """One series as arrays for a single Plotly trace.
+
+    Sorted by time, cropped to *window* (keeping one point either side so the
+    line reaches the edges), min/max-decimated to about *buckets* buckets when
+    given (keeps every peak and dip, so the image looks the same), and broken
+    with NaN where the recording has a gap (> 3× the logging interval, min 2 s).
+    """
+    x = np.array([dp.timestamp for dp in points], dtype='datetime64[ms]')
+    y = np.array([dp.value for dp in points], dtype=float)
+    if use_abs:
+        y = np.abs(y)
+    order = np.argsort(x, kind='stable')
+    x, y = x[order], y[order]
+    if window:
+        lo = max(int(np.searchsorted(x, np.datetime64(window[0], 'ms'))) - 1, 0)
+        hi = int(np.searchsorted(x, np.datetime64(window[1], 'ms'), side='right')) + 1
+        x, y = x[lo:hi], y[lo:hi]
+    if x.size < 2:
+        return x, y
+
+    dt  = np.diff(x).astype('int64') / 1000.0
+    gap = max(2.0, 3.0 * float(np.median(dt)))
+    seg = np.concatenate(([0], np.cumsum(dt > gap)))
+
+    if buckets and x.size > 2 * buckets:
+        step   = int(math.ceil(x.size / buckets))
+        key    = seg * (x.size // step + 2) + np.arange(x.size) // step
+        groups = pd.Series(y).groupby(key, sort=False)
+        edges  = np.flatnonzero(np.diff(seg)) if seg[-1] else np.array([], dtype=int)
+        keep   = np.unique(np.concatenate((
+            groups.idxmin().to_numpy(), groups.idxmax().to_numpy(),
+            [0, x.size - 1], edges, edges + 1)).astype(int))
+        x, y, seg = x[keep], y[keep], seg[keep]
+
+    breaks = np.flatnonzero(np.diff(seg)) + 1
+    if breaks.size:
+        x = np.insert(x, breaks, x[breaks - 1])
+        y = np.insert(y, breaks, np.nan)
+    return x, y
+
+
 def build_plotly_figure(config: ConfigManager,
                          all_series_data: List[List[DataPoint]],
                          tasks: List[Task],
@@ -91,21 +136,35 @@ def build_plotly_figure(config: ConfigManager,
     rc      = config.get_responsive_config()
     all_cfg = config.get_all_series_configs()
 
+    # ── Plot window (x) from config ──────────────────────────────────────────
+    x_min_dt, x_max_dt = None, None
+    if ac.get('x_min') and ac.get('x_max'):
+        try:
+            x_min_dt = datetime.strptime(ac['x_min'], '%Y-%m-%d %H:%M:%S')
+            x_max_dt = datetime.strptime(ac['x_max'], '%Y-%m-%d %H:%M:%S')
+        except (ValueError, TypeError):
+            pass
+    window = (x_min_dt, x_max_dt) if x_min_dt and x_max_dt else None
+
+    # ── Series as arrays: one trace each, cropped to the window, and
+    # decimated for static export (≈2 points per pixel column keeps peaks).
+    buckets = int(width) if width else None
+    lines = []
+    for idx, data_points in enumerate(all_series_data):
+        sc = all_cfg[idx] if idx < len(all_cfg) else all_cfg[-1]
+        lines.append(_line_arrays(data_points, sc.get('abs_value', False), window, buckets)
+                     if data_points else None)
+    has_data = any(ln is not None and ln[0].size for ln in lines)
+
     # ── Y-axis data range ────────────────────────────────────────────────────
     y_min_cfg = ac.get('y_min')
     y_max_cfg = ac.get('y_max')
-    flat_points: List[DataPoint] = [dp for pts in all_series_data for dp in pts]
 
-    # Actual data extent — used for label placement regardless of axis limits.
-    # Respect per-series abs_value flag so placement matches what is plotted.
-    if flat_points:
-        abs_flags = {i: sc.get('abs_value', False) for i, sc in enumerate(all_cfg)}
-        vals = []
-        for idx, data_points in enumerate(all_series_data):
-            use_abs = abs_flags.get(idx, False)
-            for dp in data_points:
-                vals.append(abs(dp.value) if use_abs else dp.value)
-        actual_data_min, actual_data_max = min(vals), max(vals)
+    # Actual data extent (inside the window) — used for label placement
+    # regardless of axis limits, and for Auto Y.
+    if has_data:
+        ys = np.concatenate([ln[1] for ln in lines if ln is not None])
+        actual_data_min, actual_data_max = float(np.nanmin(ys)), float(np.nanmax(ys))
     else:
         actual_data_min, actual_data_max = 0.0, 1.0
 
@@ -120,41 +179,22 @@ def build_plotly_figure(config: ConfigManager,
     # Unit from the Y label, e.g. 'Active Power (kW)' → ' kW' in hover text
     _u = re.search(r'\(([^()]*)\)\s*$', ac.get('y_label') or '')
     hover_unit = ('' if not _u else '%' if _u.group(1) == '%' else f" {_u.group(1)}")
-    for idx, data_points in enumerate(all_series_data):
-        if not data_points:
+    for idx, line in enumerate(lines):
+        if line is None:
             continue
         sc        = all_cfg[idx] if idx < len(all_cfg) else all_cfg[-1]
         name      = sc.get('name', f'Series {idx + 1}')
-        color     = sc.get('line_color', '#1f77b4')
-        linewidth = sc.get('linewidth', 1.5)
-        alpha     = sc.get('alpha', 0.65)
-        sorted_pts = sorted(data_points, key=lambda dp: dp.timestamp)
-
-        segments, seg = [], []
-        for dp in sorted_pts:
-            if seg and (dp.timestamp - seg[-1].timestamp).total_seconds() > 2.0:
-                segments.append(seg); seg = []
-            seg.append(dp)
-        if seg:
-            segments.append(seg)
-
-        use_abs = sc.get('abs_value', False)
-        first = True
-        for segment in segments:
-            values = [abs(dp.value) if use_abs else dp.value for dp in segment]
-            fig.add_trace(go.Scatter(
-                x=[dp.timestamp for dp in segment],
-                y=values,
-                mode='lines',
-                name=name if first else None,
-                showlegend=first,
-                legendgroup=name,
-                line=dict(color=color, width=linewidth),
-                opacity=alpha,
-                hovertemplate='%{x|%H:%M:%S %b %d}<br>%{y:.4f}' + hover_unit
-                              + '<extra>' + name + '</extra>',
-            ))
-            first = False
+        fig.add_trace(go.Scatter(
+            x=line[0],
+            y=line[1],
+            mode='lines',
+            name=name,
+            connectgaps=False,          # NaN breaks the line at recording gaps
+            line=dict(color=sc.get('line_color', '#1f77b4'), width=sc.get('linewidth', 1.5)),
+            opacity=sc.get('alpha', 0.65),
+            hovertemplate='%{x|%H:%M:%S %b %d}<br>%{y:.4f}' + hover_unit
+                          + '<extra>' + name + '</extra>',
+        ))
 
     # ── Gantt overlay ─────────────────────────────────────────────────────────
     fallback_palette = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -165,6 +205,11 @@ def build_plotly_figure(config: ConfigManager,
     if tasks and gantt_config and gantt_config.is_loaded():
         # reset color counter so colors are assigned fresh (same as mpl)
         gantt_config.color_index = 0
+
+    # Shapes / annotations are collected and set once at the end — adding them
+    # one by one copies the whole layout each time (seconds per chart).
+    shapes:      List[dict] = []
+    annotations: List[dict] = []
 
     # Assign colors & collect task data
     task_data = []
@@ -190,31 +235,16 @@ def build_plotly_figure(config: ConfigManager,
             'fill': fill_rgba, 'edge': edge_rgba,
         })
 
-        # Colored band (below data lines) — no border on vrect itself
-        fig.add_vrect(
-            x0=task.start_time, x1=task.end_time,
-            fillcolor=fill_rgba,
-            line=dict(width=0),
-            layer='below',
-        )
-        # Left edge only
-        fig.add_shape(
-            type='line',
-            x0=task.start_time, x1=task.start_time,
-            y0=0, y1=1,
-            xref='x', yref='y domain',
-            line=dict(color=edge_rgba, width=1),
-            layer='below',
-        )
-        # Right edge only
-        fig.add_shape(
-            type='line',
-            x0=task.end_time, x1=task.end_time,
-            y0=0, y1=1,
-            xref='x', yref='y domain',
-            line=dict(color=edge_rgba, width=1),
-            layer='below',
-        )
+        # Start and end edges of the task band (below data lines)
+        for edge_t in (task.start_time, task.end_time):
+            shapes.append(dict(
+                type='line',
+                x0=edge_t, x1=edge_t,
+                y0=0, y1=1,
+                xref='x', yref='y domain',
+                line=dict(color=edge_rgba, width=1),
+                layer='below',
+            ))
 
     # ── Collision-free label rows (mirrors matplotlib algorithm) ─────────────
     #
@@ -236,15 +266,10 @@ def build_plotly_figure(config: ConfigManager,
     # Estimate character width in seconds to detect X overlaps
     # Use a rough approximation: 1 char ≈ label_fs * 0.5 px, figure is ~2560 px wide
     # Map pixel width to time using x_range
-    x_min_dt, x_max_dt = None, None
-    if ac.get('x_min') and ac.get('x_max'):
-        try:
-            x_min_dt = datetime.strptime(ac['x_min'], '%Y-%m-%d %H:%M:%S')
-            x_max_dt = datetime.strptime(ac['x_max'], '%Y-%m-%d %H:%M:%S')
-        except (ValueError, TypeError):
-            pass
-    if x_min_dt is None and flat_points:
-        all_ts = [dp.timestamp for dp in flat_points]
+    # (no window in config → data + schedule extent)
+    if x_min_dt is None and has_data:
+        all_ts = [t.astype(datetime) for ln in lines if ln is not None and ln[0].size
+                  for t in (ln[0].min(), ln[0].max())]
         all_ts += [t for task in tasks for t in (task.start_time, task.end_time)]
         x_min_dt, x_max_dt = min(all_ts), max(all_ts)
 
@@ -296,38 +321,29 @@ def build_plotly_figure(config: ConfigManager,
         #   • label annotation slightly above arrow_y
 
         # Dotted line (drawn as a zero-height filled shape)
-        fig.add_shape(
+        shapes.append(dict(
             type='line',
             x0=task.start_time, x1=task.end_time,
             y0=arrow_y, y1=arrow_y,
+            xref='x', yref='y',
             line=dict(color=color, width=1.2, dash='dot'),
             layer='above',
-        )
+        ))
 
-        # Left arrowhead  ◄
-        fig.add_annotation(
-            x=task.start_time, y=arrow_y,
-            ax=task.end_time,  ay=arrow_y,
-            xref='x', yref='y', axref='x', ayref='y',
-            showarrow=True,
-            arrowhead=2, arrowsize=0.8, arrowwidth=1.2,
-            arrowcolor=color,
-            text='',
-        )
-
-        # Right arrowhead  ►
-        fig.add_annotation(
-            x=task.end_time,   y=arrow_y,
-            ax=task.start_time, ay=arrow_y,
-            xref='x', yref='y', axref='x', ayref='y',
-            showarrow=True,
-            arrowhead=2, arrowsize=0.8, arrowwidth=1.2,
-            arrowcolor=color,
-            text='',
-        )
+        # Arrowheads  ◄ at start, ► at end
+        for tip, tail in ((task.start_time, task.end_time), (task.end_time, task.start_time)):
+            annotations.append(dict(
+                x=tip,  y=arrow_y,
+                ax=tail, ay=arrow_y,
+                xref='x', yref='y', axref='x', ayref='y',
+                showarrow=True,
+                arrowhead=2, arrowsize=0.8, arrowwidth=1.2,
+                arrowcolor=color,
+                text='',
+            ))
 
         # Test ID label (with white background box, matching mpl bbox style)
-        fig.add_annotation(
+        annotations.append(dict(
             x=task.start_time, y=label_y,
             xref='x', yref='y',
             text=f'<b>{task.display_id}</b>',
@@ -339,7 +355,7 @@ def build_plotly_figure(config: ConfigManager,
             bordercolor=color,
             borderwidth=0.8,
             borderpad=2,
-        )
+        ))
 
     # ── Layout ────────────────────────────────────────────────────────────────
     # All aesthetic values come from config (aesthetics.json → per-chart merge).
@@ -362,7 +378,7 @@ def build_plotly_figure(config: ConfigManager,
     y_range = None
     if y_min_cfg is not None and y_max_cfg is not None:
         y_range = [float(y_min_cfg), float(y_max_cfg)]
-    elif flat_points:
+    elif has_data:
         pad = data_range * 0.05
         # Preserve sign: pad both ends symmetrically so negative values stay visible
         y_range = [data_min - pad, data_max + pad]
@@ -385,15 +401,8 @@ def build_plotly_figure(config: ConfigManager,
     # Always compute x_range from config or full data extent so Live Preview
     # shows the same axis span as the exported image (autosize only affects
     # the figure's pixel dimensions, not the data range).
-    x_range = None
-    if x_min_dt and x_max_dt:
-        x_range = [x_min_dt, x_max_dt]
-    elif flat_points:
-        all_ts = [dp.timestamp for dp in flat_points]
-        if tasks:
-            all_ts += [t for task in tasks for t in (task.start_time, task.end_time)]
-        if all_ts:
-            x_range = [min(all_ts), max(all_ts)]
+    # (x_min_dt / x_max_dt already fall back to the data + schedule extent.)
+    x_range = [x_min_dt, x_max_dt] if x_min_dt and x_max_dt else None
 
     x_major_ms, x_minor_ms = _x_tick_spacing(x_range)
 
@@ -514,7 +523,7 @@ def build_plotly_figure(config: ConfigManager,
             _is_labeled = _rem < _tol or abs(_rem - y_dtick) < _tol
 
             if not _is_labeled and (y_range[0] - _tol) <= _pos <= (y_range[1] + _tol):
-                fig.add_shape(
+                shapes.append(dict(
                     type='line',
                     # Extends 3 px to the LEFT of the y-axis spine (paper coords)
                     x0=_left - _tick_frac, x1=_left,
@@ -522,7 +531,7 @@ def build_plotly_figure(config: ConfigManager,
                     xref='paper', yref='y',
                     line=dict(color=_minor_tick_color, width=0.7),
                     layer='above',
-                )
+                ))
             _pos = round(_pos + y_minor_dtick, 10)  # round avoids float drift
 
     # ── Right-side legend table (mirrors matplotlib _create_legend) ───────────
@@ -570,7 +579,7 @@ def build_plotly_figure(config: ConfigManager,
     _fig_w = width if width else 1200
     legend_w_px = max(200, int((1.0 - _right) * _fig_w) - 60)
 
-    fig.add_annotation(
+    annotations.append(dict(
         x=leg_x, y=leg_y,
         xref='paper', yref='paper',
         xanchor='left', yanchor='top',
@@ -583,6 +592,7 @@ def build_plotly_figure(config: ConfigManager,
         borderwidth=0,
         borderpad=8,
         width=legend_w_px,
-    )
+    ))
 
+    fig.update_layout(shapes=shapes, annotations=annotations)
     return fig

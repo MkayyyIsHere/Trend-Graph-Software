@@ -56,3 +56,9 @@ Format: version — date — what changed
   reading across all files when Auto Y is on, so every slide of a chart uses the same unit
 - Y-axis label and hover values carry the unit; Y limits are stored in W/V/A and shown in the chosen unit
 - FIX: Active Power axis said "kW" while plotting W
+- Faster charts: one trace per series from NumPy arrays (cropped to the plot window), min/max
+  decimation to ~2 points per pixel for image export (no visible change), Gantt shapes and labels
+  set in one go — 30 charts in ~18 s (was ~100 s; ~225 s before 1.1.0)
+- Recording gaps are detected relative to the logging interval (> 3× interval, min 2 s), so exports
+  logged every 10 s / 1 min draw as lines instead of separate points
+- Auto Y fits the data inside the plot window rather than the whole file
