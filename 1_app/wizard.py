@@ -3,7 +3,10 @@
 Everything a normal run needs lives on this one tab:
   1. Events  — the test-schedule CSV; the plot time window is derived from it
   2. Data    — folder of analyser exports
-  3. Output  — output folder, which charts to draw, and their Y limits
+  3. Output  — output folder, which charts to draw, their Y limits and units
+
+Y limits are saved in base units (W, V, A); the table shows and accepts them
+in the row's unit (e.g. kW) and converts back when a run starts.
 
 Folders, the event file, chart selection and Y limits are remembered in
 %APPDATA%/TrendGraph/settings.json, so a repeat run is: open app → Generate.
@@ -17,7 +20,7 @@ import threading
 import zipfile
 from datetime import datetime
 
-from dash import Input, Output, State, ALL, ctx, html, dcc, no_update
+from dash import Input, Output, State, ALL, MATCH, ctx, html, dcc, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from flask import send_file
@@ -31,6 +34,7 @@ from backend.batch_worker import run_batch as _run_batch_worker
 from backend.config import ConfigManager
 from backend.formats import SYSTEMS, sniff_brand
 from backend.processors import EventDataProcessor, event_plot_window
+from backend.units import AUTO, base_unit, factor, resolve_unit, unit_options
 
 _DATA_EXTS   = ('.csv', '.txt')
 _WINDOW_FMT  = '%Y-%m-%d %H:%M'
@@ -54,7 +58,7 @@ def _aesthetics_for(folder: str):
 
 
 def _chart_entries(folder: str) -> list:
-    """[{file, name, included, y_min, y_max}] in batch-profile order."""
+    """[{file, name, included, y_min, y_max, base}] in batch-profile order."""
     bpm = BatchProfileManager()
     bpm.load(folder)
     entries = []
@@ -68,6 +72,7 @@ def _chart_entries(folder: str) -> list:
             'included': e['included'],
             'y_min':    axis.get('y_min'),
             'y_max':    axis.get('y_max'),
+            'base':     base_unit(cfg.config),    # None = dimensionless (PF, THD %)
         })
     return entries
 
@@ -86,6 +91,11 @@ def _parse_window_value(text):
         except ValueError:
             continue
     return None
+
+
+def _shown(v, f):
+    """Base-unit value → display value in the row's unit (trimmed float)."""
+    return None if v is None else float(f"{float(v) / f:.6g}")
 
 
 def _num(v):
@@ -188,10 +198,14 @@ def wizard_tab():
     ])
 
 
-def _chart_table(entries, saved_limits, saved_included):
+def _chart_table(entries, saved_limits, saved_included, saved_units):
     header = html.Thead(html.Tr([
         html.Th("Draw", style={'width': '60px'}), html.Th("Chart"),
+        html.Th("Unit", style={'width': '110px'},
+                title="Auto picks the unit from the Y limits, or from the largest "
+                      "reading across all files when Auto Y is on"),
         html.Th("Y min", style={'width': '140px'}), html.Th("Y max", style={'width': '140px'}),
+        html.Th("", style={'width': '50px'}),
         html.Th("Auto Y", style={'width': '80px'}),
     ]))
     rows = []
@@ -202,13 +216,28 @@ def _chart_table(entries, saved_limits, saved_included):
         y_max  = lim.get('y_max', e['y_max'])
         auto   = lim.get('auto', y_min is None or y_max is None)
         on     = (f in saved_included) if saved_included is not None else e['included']
+        base   = e['base']
+        choice = saved_units.get(f, AUTO) if base else AUTO
+        # Unit the Y boxes are typed in: the chosen unit, or (Auto) the one
+        # that suits the current limits — 1 500 000 W shows as 1500 kW.
+        in_unit = resolve_unit(choice, base, y_min, y_max) or ''
+        f_in    = factor(in_unit, base) if base else 1.0
+        if base:
+            opts = [{'label': 'Auto', 'value': AUTO}] + [
+                {'label': u, 'value': u} for u in unit_options(base)]
+        else:
+            opts = [{'label': '—', 'value': AUTO}]
         rows.append(html.Tr([
             html.Td(dbc.Checkbox(id={'type': 'wz-on', 'file': f}, value=on)),
             html.Td(e['name']),
+            html.Td(dbc.Select(id={'type': 'wz-unit', 'file': f}, options=opts, value=choice,
+                               size='sm', disabled=not base)),
             html.Td(dbc.Input(id={'type': 'wz-ymin', 'file': f}, type='number', size='sm',
-                              value=y_min, disabled=auto)),
+                              value=_shown(y_min, f_in), disabled=auto)),
             html.Td(dbc.Input(id={'type': 'wz-ymax', 'file': f}, type='number', size='sm',
-                              value=y_max, disabled=auto)),
+                              value=_shown(y_max, f_in), disabled=auto)),
+            html.Td(html.Span(in_unit, id={'type': 'wz-inunit', 'file': f},
+                              className="small text-muted")),
             html.Td(dbc.Switch(id={'type': 'wz-yauto', 'file': f}, value=auto)),
         ]))
     return dbc.Table([header, html.Tbody(rows)], size='sm', bordered=False, hover=True,
@@ -315,14 +344,15 @@ def register_wizard_callbacks(app, state):
         entries = _chart_entries(folder)
         s       = load_settings()
         limits  = s.get('wz_y_limits', {})
+        units   = s.get('wz_units', {})
         if ctx.triggered_id == 'wz-reset-y':
-            limits = {}
-            save_settings(wz_y_limits={})
+            limits, units = {}, {}
+            save_settings(wz_y_limits={}, wz_units={})
         included = s.get('wz_charts')
         source = ("Using built-in charts." if folder == DEFAULT_CONFIGS_DIR else
                   f"Using custom charts from {folder} (change in Advanced → Config Manager).")
         defaults = {e['file']: [e['y_min'], e['y_max']] for e in entries}
-        return _chart_table(entries, limits, included), source, defaults
+        return _chart_table(entries, limits, included, units), source, defaults
 
     # Auto-Y switch greys out its row's inputs
     @app.callback(
@@ -332,6 +362,31 @@ def register_wizard_callbacks(app, state):
     )
     def toggle_auto(autos):
         return list(autos), list(autos)
+
+    # Changing a row's unit converts its typed Y limits (1500 kW → 1.5 MW).
+    # Auto keeps the boxes in whatever unit they already show.
+    @app.callback(
+        Output({'type': 'wz-ymin', 'file': MATCH}, 'value'),
+        Output({'type': 'wz-ymax', 'file': MATCH}, 'value'),
+        Output({'type': 'wz-inunit', 'file': MATCH}, 'children'),
+        Input({'type': 'wz-unit', 'file': MATCH}, 'value'),
+        State({'type': 'wz-ymin', 'file': MATCH}, 'value'),
+        State({'type': 'wz-ymax', 'file': MATCH}, 'value'),
+        State({'type': 'wz-inunit', 'file': MATCH}, 'children'),
+        prevent_initial_call=True,
+    )
+    def change_unit(choice, ymin, ymax, in_unit):
+        if not choice or choice == AUTO or choice == in_unit or not in_unit:
+            raise PreventUpdate
+        base = in_unit[1:] if in_unit[:1] in ('k', 'M') else in_unit
+        if choice not in unit_options(base):
+            raise PreventUpdate
+        k = factor(in_unit, base) / factor(choice, base)
+
+        def conv(v):
+            v = _num(v)
+            return None if v is None else float(f"{v * k:.6g}")
+        return conv(ymin), conv(ymax), choice
 
     # ── Readiness: enable Generate once all three steps are valid ────────────
     @app.callback(
@@ -378,12 +433,14 @@ def register_wizard_callbacks(app, state):
         State({'type': 'wz-ymin', 'file': ALL}, 'value'),
         State({'type': 'wz-ymax', 'file': ALL}, 'value'),
         State({'type': 'wz-yauto', 'file': ALL}, 'value'),
+        State({'type': 'wz-unit', 'file': ALL}, 'value'),
+        State({'type': 'wz-inunit', 'file': ALL}, 'children'),
         State('batch-workers', 'value'),
         State('wz-system', 'value'),
         prevent_initial_call=True,
     )
     def run(_, event_path, data_folder, out_folder, x_min, x_max,
-            ons, ids, ymins, ymaxs, autos, workers, system):
+            ons, ids, ymins, ymaxs, autos, unit_choices, in_units, workers, system):
         if state.batch_running:
             raise PreventUpdate
 
@@ -398,14 +455,21 @@ def register_wizard_callbacks(app, state):
 
         folder = _config_folder()
         files  = [i['file'] for i in ids]
-        limits, overrides = {}, {}
-        for f, auto, ymin, ymax in zip(files, autos, ymins, ymaxs):
+        bases  = {e['file']: e['base'] for e in _chart_entries(folder)}
+        limits, overrides, units = {}, {}, {}
+        for f, auto, ymin, ymax, choice, in_unit in zip(files, autos, ymins, ymaxs,
+                                                        unit_choices, in_units):
+            base = bases.get(f)
+            k    = factor(in_unit, base) if base and in_unit else 1.0   # typed → base units
             ymin, ymax = _num(ymin), _num(ymax)
+            ymin = None if ymin is None else ymin * k
+            ymax = None if ymax is None else ymax * k
+            units[f] = choice or AUTO
             limits[f] = {'auto': bool(auto), 'y_min': ymin, 'y_max': ymax}
             overrides[f] = ({'y_min': None, 'y_max': None} if auto or ymin is None or ymax is None
                             else {'y_min': ymin, 'y_max': ymax})
         chosen = [f for f, on in zip(files, ons) if on]
-        save_settings(wz_y_limits=limits, wz_charts=chosen)
+        save_settings(wz_y_limits=limits, wz_charts=chosen, wz_units=units)
 
         config_files = [os.path.join(folder, f) for f in chosen]
         data_files   = _data_files(data_folder)
@@ -430,7 +494,8 @@ def register_wizard_callbacks(app, state):
             kwargs={'aesthetics_path': _aesthetics_for(folder),
                     'axis_overrides':  overrides,
                     'x_window':        x_window,
-                    'system':          system or '3P4W'},
+                    'system':          system or '3P4W',
+                    'units':           units},
             daemon=True,
         ).start()
         return False, ""

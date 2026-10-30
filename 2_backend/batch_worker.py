@@ -12,7 +12,8 @@ from typing import List, Callable
 import kaleido
 
 from backend.processors import EventDataProcessor, event_plot_window
-from backend.formats import ChartSkipped, DataFileError, load_chart_data
+from backend.formats import ChartSkipped, DataFileError, load_chart_data, metric_peak
+from backend.units import AUTO, apply_display_unit, base_unit
 from backend.config import ConfigManager, GanttConfigManager
 from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
@@ -36,6 +37,7 @@ def run_batch(
     axis_overrides: dict = None,   # {config filename: {y_min, y_max, ...}}; None value = auto
     x_window:       tuple = None,  # (x_min, x_max) strings applied to every chart
     system:         str = '3P4W',  # wiring of the recordings: '3P4W' (with N) or '3P3W'
+    units:          dict = None,   # {config filename: 'auto' | 'kW' | ...}; missing = auto
 ):
     """
     Runs the full batch render in a background thread.
@@ -80,7 +82,7 @@ def run_batch(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
             on_done, override_chart, ts, _batch_start, aesthetics_path,
-            axis_overrides, x_window, system,
+            axis_overrides, x_window, system, units,
         )
     finally:
         kaleido.stop_sync_server(silence_warnings=True)
@@ -106,6 +108,7 @@ def _run_batch_body(
     axis_overrides: dict = None,
     x_window:       tuple = None,
     system:         str = '3P4W',
+    units:          dict = None,
 ):
     """Inner body of run_batch — called after the kaleido server is live."""
     blog = batch_log.append
@@ -146,6 +149,53 @@ def _run_batch_body(
              f"{derived_window[0]:%Y-%m-%d %H:%M} → {derived_window[1]:%Y-%m-%d %H:%M} "
              f"(used where a chart has no x_min/x_max)")
 
+    def _load_cfg(cfg_path):
+        """Chart config with run-level overrides applied (None if invalid)."""
+        cfg = ConfigManager(cfg_path, aesthetics_path=aesthetics_path, logger=logger)
+        if not cfg.config:
+            return None
+        # UI-level overrides (resolution/dpi) on top of the JSON values.
+        if override_chart:
+            cfg.config.setdefault('chart', {}).update(override_chart)
+        # Run-level axis overrides from the wizard: time window for every
+        # chart, then per-chart Y limits (None = auto-fit to data).
+        axis = cfg.config.setdefault('axis', {})
+        if x_window:
+            axis['x_min'], axis['x_max'] = x_window
+        elif derived_window and not (axis.get('x_min') and axis.get('x_max')):
+            axis['x_min'], axis['x_max'] = (d.strftime('%Y-%m-%d %H:%M:%S') for d in derived_window)
+        for k, v in ((axis_overrides or {}).get(os.path.basename(cfg_path)) or {}).items():
+            if v is None:
+                axis.pop(k, None)
+            else:
+                axis[k] = v
+        return cfg
+
+    # Display units: an auto-unit chart with Auto Y takes its unit from the
+    # largest reading across ALL files, so every slide of that chart matches.
+    units = units or {}
+    batch_peak = {}
+    peak_window = None
+    if x_window:
+        peak_window = tuple(datetime.strptime(v, '%Y-%m-%d %H:%M:%S') for v in x_window)
+    elif derived_window:
+        peak_window = derived_window
+    for cfg_path in config_files:
+        name = os.path.basename(cfg_path)
+        cfg  = _load_cfg(cfg_path)
+        if (cfg is None or units.get(name, AUTO) != AUTO or not base_unit(cfg.config)
+                or not cfg.config.get('metric')):
+            continue
+        axis = cfg.config['axis']
+        if axis.get('y_min') is not None and axis.get('y_max') is not None:
+            continue                           # unit follows the fixed limits
+        # Reverse order leaves the first files in the parse cache for rendering.
+        peaks = [metric_peak(p, cfg.config['metric'], system, peak_window)
+                 for p in reversed(data_files)]
+        peaks = [p for p in peaks if p is not None]
+        if peaks:
+            batch_peak[name] = max(peaks)
+
     # Build all work items upfront
     work_items = []
     for data_path in data_files:
@@ -167,28 +217,12 @@ def _run_batch_body(
         cfg_name  = os.path.basename(cfg_path)
         data_name = os.path.basename(data_path)
 
-        cfg = ConfigManager(cfg_path, aesthetics_path=aesthetics_path, logger=logger)
-        if not cfg.config:
+        # Each worker reloads the config fresh from disk, then applies the
+        # run-level overrides (resolution, time window, Y limits).
+        cfg = _load_cfg(cfg_path)
+        if cfg is None:
             return out_name, f"SKIPPED (invalid config): {cfg_name}", None
-
-        # Apply UI-level overrides (resolution/dpi) on top of the JSON values.
-        # This ensures that settings changed in the Settings modal are honoured
-        # even though each worker reloads the config fresh from disk.
-        if override_chart:
-            cfg.config.setdefault('chart', {}).update(override_chart)
-
-        # Run-level axis overrides from the wizard: time window for every
-        # chart, then per-chart Y limits (None = auto-fit to data).
-        axis = cfg.config.setdefault('axis', {})
-        if x_window:
-            axis['x_min'], axis['x_max'] = x_window
-        elif derived_window and not (axis.get('x_min') and axis.get('x_max')):
-            axis['x_min'], axis['x_max'] = (d.strftime('%Y-%m-%d %H:%M:%S') for d in derived_window)
-        for k, v in ((axis_overrides or {}).get(cfg_name) or {}).items():
-            if v is None:
-                axis.pop(k, None)
-            else:
-                axis[k] = v
+        axis = cfg.config['axis']
 
         # Each data file is parsed once and shared by every chart (formats cache).
         try:
@@ -200,6 +234,8 @@ def _run_batch_body(
             return out_name, f"FAILED: {data_name} / {cfg_name} — {e}", None
         except Exception as e:
             return out_name, f"FAILED (data load): {data_name} — {e}", None
+
+        apply_display_unit(cfg, all_dp, units.get(cfg_name, AUTO), batch_peak.get(cfg_name))
 
         try:
             win = [datetime.strptime(axis[k], '%Y-%m-%d %H:%M:%S') for k in ('x_min', 'x_max')]

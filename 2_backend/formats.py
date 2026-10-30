@@ -10,6 +10,8 @@
 #                              METRIC_SETS for the wiring system (3P4W / 3P3W)
 #                            • legacy chart JSON → per-series value_column /
 #                              value_column_keywords (no silent fallback)
+# metric_peak(...)         Largest |value| of a chart metric in a file (picks
+#                          the display unit for a batch, see units.py)
 #
 # WHERE TO CHANGE THINGS
 # └── a new export naming → add the column name to the candidate lists below
@@ -281,3 +283,22 @@ def load_chart_data(cfg, data_path: str, system: str = '3P4W') -> List[List[Data
     if not any(all_dp):
         raise DataFileError("no valid readings in the selected columns")
     return all_dp
+
+
+def metric_peak(data_path: str, metric: str, system: str = '3P4W', window=None) -> Optional[float]:
+    """Largest |value| a metric chart would plot from one file (inside *window*
+    (start, end) when given), or None when the file cannot supply it."""
+    try:
+        table = load_table(data_path)
+        cols  = [col for _, col in resolve_metric(table, metric, system)]
+    except (ChartSkipped, DataFileError, OSError, ValueError):
+        return None
+    mask = None
+    if window:
+        mask = (table.timestamps >= window[0]) & (table.timestamps <= window[1])
+    peaks = []
+    for c in cols:
+        v = np.abs(table.values(c) if mask is None else table.values(c)[mask])
+        if v.size and not np.all(np.isnan(v)):
+            peaks.append(float(np.nanmax(v)))
+    return max(peaks, default=None)

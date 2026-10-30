@@ -3,6 +3,7 @@
 # =============================================================================
 
 import math
+import re
 import textwrap as _textwrap
 from typing import Dict, List, Tuple
 
@@ -116,6 +117,9 @@ def build_plotly_figure(config: ConfigManager,
     data_range = data_max - data_min or 1.0
 
     # ── Series lines ─────────────────────────────────────────────────────────
+    # Unit from the Y label, e.g. 'Active Power (kW)' → ' kW' in hover text
+    _u = re.search(r'\(([^()]*)\)\s*$', ac.get('y_label') or '')
+    hover_unit = ('' if not _u else '%' if _u.group(1) == '%' else f" {_u.group(1)}")
     for idx, data_points in enumerate(all_series_data):
         if not data_points:
             continue
@@ -147,7 +151,8 @@ def build_plotly_figure(config: ConfigManager,
                 legendgroup=name,
                 line=dict(color=color, width=linewidth),
                 opacity=alpha,
-                hovertemplate='%{x|%H:%M:%S %b %d}<br>%{y:.4f}<extra>' + name + '</extra>',
+                hovertemplate='%{x|%H:%M:%S %b %d}<br>%{y:.4f}' + hover_unit
+                              + '<extra>' + name + '</extra>',
             ))
             first = False
 

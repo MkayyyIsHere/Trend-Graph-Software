@@ -51,3 +51,8 @@ Format: version — date — what changed
 - FIX: Active Power chart plotted a current column on Fluke exports without PowerPfund;
   it now uses PowerP (total active power) for every Fluke export
 - Data files are parsed once per run and vectorised (~0.1–0.5 s per file instead of ~10 s × 18)
+- Display units: power W/kW/MW, voltage V/kV, current A/kA, frequency Hz/kHz — Unit column per chart
+  on the Quick Run tab (Auto or fixed). Auto picks the unit from the Y limits, or from the largest
+  reading across all files when Auto Y is on, so every slide of a chart uses the same unit
+- Y-axis label and hover values carry the unit; Y limits are stored in W/V/A and shown in the chosen unit
+- FIX: Active Power axis said "kW" while plotting W

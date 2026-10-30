@@ -16,6 +16,7 @@ from utils.constants import (DEFAULT_DPI, DEFAULT_FIGURE_SIZE, RESOLUTION_PRESET
                              RESERVED_CONFIG_FILENAMES, load_settings)
 from backend.processors import EventDataProcessor
 from backend.formats import ChartSkipped, DataFileError, load_chart_data
+from backend.units import AUTO, apply_display_unit
 from backend.plotly_preview import build_plotly_figure
 from backend.batch_worker import run_batch as _run_batch_worker
 from backend.ppt_builder import PPTBuilder
@@ -438,6 +439,10 @@ def register_callbacks(app, state, temp_dir: str):
         except (ChartSkipped, DataFileError) as e:
             state.logger.error(f"Data load: {e}")
             return (dbc.Alert(f"Cannot draw this chart from that file: {e}", color="danger"), *_fail)
+        # Same unit choice as the Quick Run table (auto = from limits / data peak)
+        unit_choice = load_settings().get('wz_units', {}).get(
+            os.path.basename(state.config.config_path or ''), AUTO)
+        unit = apply_display_unit(state.config, all_data_points, unit_choice)
         series_summaries = []
         for sc, pts in zip(state.config.get_all_series_configs(), all_data_points):
             vals = [dp.value for dp in pts]
@@ -446,8 +451,8 @@ def register_callbacks(app, state, temp_dir: str):
                 'Points':    len(pts),
                 'Start':     str(pts[0].timestamp) if pts else '—',
                 'End':       str(pts[-1].timestamp) if pts else '—',
-                'Value Min': f"{min(vals):.4f}" if vals else '—',
-                'Value Max': f"{max(vals):.4f}" if vals else '—',
+                'Value Min': f"{min(vals):.4f} {unit or ''}".strip() if vals else '—',
+                'Value Max': f"{max(vals):.4f} {unit or ''}".strip() if vals else '—',
             })
 
         event_proc = EventDataProcessor(logger=state.logger)

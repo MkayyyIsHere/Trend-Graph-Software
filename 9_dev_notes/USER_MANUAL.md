@@ -50,7 +50,7 @@ The **🚀 Quick Run** tab opens first and covers a normal job on one page. No c
    - **3-phase 3-wire (without N):** Voltage and THD charts show line-to-line (AB/BC/CA).
 
    Hioki exports name their own channels (U1 = phase-to-neutral, U12 = line-to-line), so they are always labelled correctly. If an export only has total power / PF (no per-phase values), those two charts are skipped for that file and listed after the run.
-3. **Charts & output:** pick an output folder, tick the charts you want, and set **Y min / Y max** per chart. Switch on **Auto Y** to fit the axis to the data.
+3. **Charts & output:** pick an output folder, tick the charts you want, and set **Y min / Y max** per chart. Switch on **Auto Y** to fit the axis to the data. The **Unit** column sets the display unit for power (W/kW/MW), voltage (V/kV), current (A/kA) and frequency (Hz/kHz). **Auto** chooses it for you: from the Y limits, or with Auto Y on, from the largest reading across all files, so every image of that chart uses the same unit. Y min / Y max are typed in the unit shown next to them; changing the unit converts them (1500 kW → 1.5 MW). Power factor and THD % have no unit to scale.
 4. Click **▶ Generate charts**. When it finishes you can **Open folder**, **Build PowerPoint** or **Download ZIP**.
 
 If a data file has no readings inside the plot window, a ⚠ warning names it after the run. This usually means the wrong schedule or the wrong day's data.
