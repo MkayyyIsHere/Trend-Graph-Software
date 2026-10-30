@@ -14,13 +14,13 @@ import sys
 from pathlib import Path
 
 # ── Read version ──────────────────────────────────────────────────
-VERSION = Path("version.txt").read_text().strip()
+VERSION = Path("Version.txt").read_text().strip()
 APP_NAME = f"TrendGraph_v{VERSION}"
-DIST_DIR = Path("8_dist")
+DIST_DIR = Path("../8_dist")
 
 print(f"Building {APP_NAME} ...")
 
-REPO_ROOT = str(Path(".").resolve())
+REPO_ROOT = str(Path("..").resolve())
 
 SPEC_CONTENT = """# -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files

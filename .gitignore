@@ -35,4 +35,7 @@ desktop.ini
 .env
 *.env.local
 
-User Manual/
+# ── Runtime-generated files ──────────────────────────────────────
+debug_log.txt
+last_session.json
+project_structure.txt

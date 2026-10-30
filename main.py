@@ -8,7 +8,8 @@ import types
 # Delete the debug block once the real build works.
 # ---------------------------------------------------------------------------
 
-_LOG_PATH = os.path.join(os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__)), "debug_log.txt")
+_LOG_PATH = os.path.join(os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__)),
+                         "8_dist/Archived/debug_log.txt")
 
 def _log(msg):
     with open(_LOG_PATH, "a", encoding="utf-8") as f:
