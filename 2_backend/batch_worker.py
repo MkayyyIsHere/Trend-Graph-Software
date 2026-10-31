@@ -18,6 +18,62 @@ from backend.chart_gen import _build_output_filename
 from backend.plotly_preview import build_plotly_figure
 from utils.constants import DEFAULT_DPI, DEFAULT_FIGURE_SIZE, DEFAULT_AESTHETICS_PATH, RESERVED_CONFIG_FILENAMES
 
+_DT_FMT = '%Y-%m-%d %H:%M:%S'
+
+
+def load_run_config(cfg_path: str, run_ctx: dict, logger=None):
+    """Chart config with a run's overrides applied (None if invalid).
+
+    run_ctx is the dict a batch reports in its result ('run_ctx'), so the
+    Results viewer can rebuild any chart exactly as the batch drew it.
+    """
+    cfg = ConfigManager(cfg_path, aesthetics_path=run_ctx.get('aesthetics_path')
+                        or DEFAULT_AESTHETICS_PATH, logger=logger)
+    if not cfg.config:
+        return None
+    # UI-level overrides (resolution/dpi) on top of the JSON values.
+    if run_ctx.get('override_chart'):
+        cfg.config.setdefault('chart', {}).update(run_ctx['override_chart'])
+    # Run-level axis overrides from the wizard: time window for every
+    # chart, then per-chart Y limits (None = auto-fit to data).
+    axis     = cfg.config.setdefault('axis', {})
+    x_window = run_ctx.get('x_window')
+    derived  = run_ctx.get('derived_window')
+    if x_window:
+        axis['x_min'], axis['x_max'] = x_window
+    elif derived and not (axis.get('x_min') and axis.get('x_max')):
+        axis['x_min'], axis['x_max'] = derived
+    for k, v in ((run_ctx.get('axis_overrides') or {}).get(os.path.basename(cfg_path)) or {}).items():
+        if v is None:
+            axis.pop(k, None)
+        else:
+            axis[k] = v
+    return cfg
+
+
+def _figure_size_px(cfg):
+    cc       = cfg.get_chart_config()
+    dpi      = cc.get('dpi', DEFAULT_DPI)
+    fig_size = cc.get('figure_size', DEFAULT_FIGURE_SIZE)
+    return int(round(fig_size[0] * dpi)), int(round(fig_size[1] * dpi))
+
+
+def build_run_figure(cfg_path: str, data_path: str, run_ctx: dict, tasks,
+                     gantt_config: GanttConfigManager, sized: bool = True):
+    """Rebuild one batch chart as a Plotly figure (same overrides, units and
+    window as the saved PNG). sized=False leaves it to fill its container.
+    Raises ChartSkipped / DataFileError / ValueError."""
+    cfg = load_run_config(cfg_path, run_ctx)
+    if cfg is None:
+        raise ValueError(f"invalid config: {os.path.basename(cfg_path)}")
+    name   = os.path.basename(cfg_path)
+    all_dp = load_chart_data(cfg, data_path, run_ctx.get('system', '3P4W'))
+    apply_display_unit(cfg, all_dp, (run_ctx.get('units') or {}).get(name, AUTO),
+                       (run_ctx.get('batch_peak') or {}).get(name))
+    w, h = _figure_size_px(cfg) if sized else (None, None)
+    return build_plotly_figure(cfg, all_dp, tasks, gantt_config, width=w, height=h)
+
+
 def run_batch(
     config_files:   List[str],
     data_files:     List[str],
@@ -36,6 +92,7 @@ def run_batch(
     x_window:       tuple = None,  # (x_min, x_max) strings applied to every chart
     system:         str = '3P4W',  # wiring of the recordings: '3P4W' (with N) or '3P3W'
     units:          dict = None,   # {config filename: 'auto' | 'kW' | ...}; missing = auto
+    on_output:      Callable = None,  # on_output(out_path, data_path, cfg_path) per saved chart
 ):
     """
     Runs the full batch render in a background thread.
@@ -91,7 +148,7 @@ def run_batch(
             config_files, data_files, event_file, out_folder, total,
             n_workers, logger, gantt_config, batch_log, stop_event,
             _report, override_chart, ts, _batch_start, aesthetics_path,
-            axis_overrides, x_window, system, units, renderer,
+            axis_overrides, x_window, system, units, renderer, on_output,
         )
     except Exception as e:
         blog(f"{ts()} ABORTED — unexpected error: {e}\n{traceback.format_exc()}")
@@ -123,6 +180,7 @@ def _run_batch_body(
     system:         str = '3P4W',
     units:          dict = None,
     renderer:       PngRenderer = None,
+    on_output:      Callable = None,
 ):
     """Inner body of run_batch — called after the image renderer is live."""
     blog = batch_log.append
@@ -163,27 +221,22 @@ def _run_batch_body(
              f"{derived_window[0]:%Y-%m-%d %H:%M} → {derived_window[1]:%Y-%m-%d %H:%M} "
              f"(used where a chart has no x_min/x_max)")
 
+    # Everything needed to redraw a chart later exactly as this batch did.
+    run_ctx = {
+        'aesthetics_path': aesthetics_path,
+        'override_chart':  override_chart,
+        'x_window':        tuple(x_window) if x_window else None,
+        'derived_window':  tuple(d.strftime(_DT_FMT) for d in derived_window) if derived_window else None,
+        'axis_overrides':  axis_overrides or {},
+        'units':           units or {},
+        'batch_peak':      {},
+        'system':          system,
+        'event_file':      event_file,
+        'gantt_path':      gantt_config.config_path if gantt_config.is_loaded() else None,
+    }
+
     def _load_cfg(cfg_path):
-        """Chart config with run-level overrides applied (None if invalid)."""
-        cfg = ConfigManager(cfg_path, aesthetics_path=aesthetics_path, logger=logger)
-        if not cfg.config:
-            return None
-        # UI-level overrides (resolution/dpi) on top of the JSON values.
-        if override_chart:
-            cfg.config.setdefault('chart', {}).update(override_chart)
-        # Run-level axis overrides from the wizard: time window for every
-        # chart, then per-chart Y limits (None = auto-fit to data).
-        axis = cfg.config.setdefault('axis', {})
-        if x_window:
-            axis['x_min'], axis['x_max'] = x_window
-        elif derived_window and not (axis.get('x_min') and axis.get('x_max')):
-            axis['x_min'], axis['x_max'] = (d.strftime('%Y-%m-%d %H:%M:%S') for d in derived_window)
-        for k, v in ((axis_overrides or {}).get(os.path.basename(cfg_path)) or {}).items():
-            if v is None:
-                axis.pop(k, None)
-            else:
-                axis[k] = v
-        return cfg
+        return load_run_config(cfg_path, run_ctx, logger)
 
     # Display units: an auto-unit chart with Auto Y takes its unit from the
     # largest reading across ALL files, so every slide of that chart matches.
@@ -209,6 +262,7 @@ def _run_batch_body(
         peaks = [p for p in peaks if p is not None]
         if peaks:
             batch_peak[name] = max(peaks)
+    run_ctx['batch_peak'] = batch_peak
 
     # Build all work items upfront
     work_items = []
@@ -265,19 +319,16 @@ def _run_batch_body(
                 gantt_config.config_path
                 if gantt_config.is_loaded() else None)
 
-            # Derive exact pixel dimensions from config (same as Matplotlib).
-            # Pass them into build_plotly_figure so the layout is constructed
-            # at the correct size — not stretched post-hoc by kaleido.
-            cc         = cfg.get_chart_config()
-            dpi        = cc.get('dpi', DEFAULT_DPI)
-            fig_size   = cc.get('figure_size', DEFAULT_FIGURE_SIZE)
-            width_px   = int(round(fig_size[0] * dpi))
-            height_px  = int(round(fig_size[1] * dpi))
+            # Exact pixel size from the config, passed into build_plotly_figure
+            # so the layout is built at that size — not stretched by kaleido.
+            width_px, height_px = _figure_size_px(cfg)
 
             fig = build_plotly_figure(cfg, all_dp, tasks, gantt_copy,
                                       width=width_px, height=height_px)
 
             renderer.save(fig, out_path, width_px, height_px)
+            if on_output:
+                on_output(out_path, data_path, cfg_path)
             return out_name, None, None   # success
 
         except RenderError as e:
@@ -347,4 +398,5 @@ def _run_batch_body(
         # by the PPT builder so slide order is deterministic.
         'outputs':    [p for _, _, p, n in work_items if n in succeeded],
         'warnings':   warnings,
+        'run_ctx':    run_ctx,
     })

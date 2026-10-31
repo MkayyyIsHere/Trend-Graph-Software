@@ -36,6 +36,7 @@ class DashApp:
 
         self._app = dash.Dash(
             __name__,
+            assets_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '4_assets'),
             external_stylesheets=[dbc.themes.FLATLY],
             title='Composite Data Plotter',
             suppress_callback_exceptions=True,

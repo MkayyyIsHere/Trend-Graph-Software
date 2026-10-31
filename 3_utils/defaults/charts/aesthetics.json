@@ -6,7 +6,7 @@
     "title_size": 36,
     "axis_label_size": 24,
     "tick_size": 18,
-    "legend_size": 20,
+    "legend_size": 18,
     "scale_factor": 1.0
   },
   "legend": {
@@ -28,8 +28,8 @@
     "visible": true,
     "axis": "both",
     "linestyle": "-",
-    "alpha": 0.3,
-    "color": "#505050",
+    "alpha": 1.0,
+    "color": "#E3E6EA",
     "gridwidth": 1.0
   },
   "subplot_params": {

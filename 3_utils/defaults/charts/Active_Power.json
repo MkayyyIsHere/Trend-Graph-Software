@@ -6,31 +6,31 @@
   "series": [
     {
       "name": "P Avg A",
-      "line_color": "#4C72B0",
-      "linewidth": 1.5,
+      "line_color": "#F50057",
+      "linewidth": 2.0,
       "linestyle": "-",
-      "alpha": 0.65,
+      "alpha": 1.0,
       "marker": "none"
     },
     {
       "name": "P Avg B",
-      "line_color": "#DD8452",
-      "linewidth": 1.5,
+      "line_color": "#2962FF",
+      "linewidth": 2.0,
       "linestyle": "-",
-      "alpha": 0.65,
+      "alpha": 1.0,
       "marker": "none"
     },
     {
       "name": "P Avg C",
-      "line_color": "#55A868",
-      "linewidth": 1.5,
+      "line_color": "#FF8F00",
+      "linewidth": 2.0,
       "linestyle": "-",
-      "alpha": 0.65,
+      "alpha": 1.0,
       "marker": "none"
     }
   ],
   "chart": {
-    "title": "Active Power Over Time Testing"
+    "title": "Active Power Trend"
   },
   "axis": {
     "x_label": "Date & Time",

@@ -72,3 +72,32 @@ Format: version — date — what changed
 - Exported images no longer show faint duplicate series names behind the legend
 - Image export no longer fetches MathJax from the internet (works offline / behind a proxy)
 - build.py works from any folder, bundles kaleido/choreographer files; .exe needs nothing alongside it
+
+## [1.2.0] - 2026-10-31
+- Quick Run laid out as a bento: Events and Data on the left, Generate & Export on the right;
+  fits a 100%-zoom browser window without page scrolling
+- New 🔍 Results tab replaces "Single Chart & Batch" and "Live Preview": charts appear while the run
+  is drawing; ◀ ▶ / arrow keys, thumbnail strip, filter by data file or chart; "Interactive" redraws
+  the current chart as a zoomable chart with the same window, Y limits and units; can also open any
+  folder of PNGs for viewing; run log kept at the bottom
+- 📑 PowerPoint tab simplified: slides default to the last run, tick/untick and ▲▼ to choose the
+  order, template remembered from Quick Run, file name prefilled; DPI/resize/output folder under
+  "More options"
+- ⚙️ Config Manager is one list (Global style, Event colours, then each chart in run order) with a
+  summary per row and the editor beside it; ▲▼ reorders and saves straight away; "Copy built-in
+  charts to a folder…" to start customising; the config folder is remembered
+- Event (Gantt) colours saved per PC in %APPDATA%\TrendGraph\gantt.json
+- Saving a chart in Config Manager keeps its metric and other fields not on the form
+- Settings window removed (resolution/DPI live in Global style); parallel workers fixed at 2
+  (measured: more workers gave no speed-up because image rendering is serialised)
+- Config Manager shows "● Unsaved changes" (Save turns orange) after an edit; switching entry or
+  generating charts with unsaved edits asks first, so edits aren't silently left out of a run
+- Optional event styling in gantt.json (gantt section): label_color, label_bg, label_border,
+  legend_id_color, edge_dash and normalization_color (e.g. "dash"); all default to the previous look
+- Event colours are re-read at the start of each run (and in Config Manager), so a changed
+  gantt.json applies without restarting the app
+- A config folder can hold its own gantt.json (event colours); it wins over this PC's copy and the
+  built-in one, and Config Manager saves Event colours there when a folder is chosen
+- New default chart look: vivid phase colours shared by every chart (A #F50057, B #2962FF,
+  C #FF8F00, N #263238; solid, 2 px), faint grid, and a muted slate event layer (dashed start/end
+  lines, soft-tag IDs) so the data stands out; titles shortened to "<Measurement> Trend"

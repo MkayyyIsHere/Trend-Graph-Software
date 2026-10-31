@@ -82,25 +82,26 @@ DEFAULT_AESTHETICS_PATH   = resource_path('charts', 'aesthetics.json')
 DEFAULT_GANTT_CONFIG_PATH = resource_path('gantt.json')
 DEFAULT_PPT_TEMPLATE_PATH = resource_path('PQA_Template.pptx')
 
-# ---------------------------------------------------------------------------
-# Resolution presets  (labels only — actual values are tuples for the UI)
-# The default resolution lives in aesthetics.json → chart.resolution_px
-# ---------------------------------------------------------------------------
-RESOLUTION_PRESETS = {
-    "Custom":                          None,
-    "1280×720 (HD)":                   (1280,  720),
-    "1920×1080 (Full HD)":             (1920, 1080),
-    "2560×1440 (2K/QHD)  ← default":  (2560, 1440),
-    "3840×2160 (4K UHD)":              (3840, 2160),
-}
+
+def user_gantt_path() -> str:
+    """Event colours edited in Config Manager (overrides the bundled gantt.json)."""
+    return os.path.join(user_data_dir(), 'gantt.json')
 
 # ---------------------------------------------------------------------------
 # Reserved filenames — never treated as chart configs by the batch worker
 # or shown in the chart file list in Config Manager.
 # ---------------------------------------------------------------------------
+GANTT_FILENAME = 'gantt.json'   # event colours kept with a config folder
+
 RESERVED_CONFIG_FILENAMES = {
     'aesthetics.json',
     'batch_profile.json',
+    GANTT_FILENAME,
 }
+# Charts rendered at once in a batch. All PNGs go through one shared browser
+# (backend/renderer.py), so a 2nd worker only overlaps data loading with
+# rendering; measured: 1 → ~24 s, 2 → ~15 s, 4 or 8 → no faster (28 images).
+BATCH_WORKERS = 2
+
 DEFAULT_DPI          = 96
 DEFAULT_FIGURE_SIZE  = [2560 / DEFAULT_DPI, 1440 / DEFAULT_DPI]

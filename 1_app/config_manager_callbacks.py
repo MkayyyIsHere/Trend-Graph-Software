@@ -1,17 +1,31 @@
-"""1_app/config_manager_callbacks.py — All callbacks for the ⚙️ Config Manager tab."""
+"""1_app/config_manager_callbacks.py — All callbacks for the ⚙️ Config Manager tab.
+
+One list on the left — 🎨 Global style (aesthetics.json), 🏷 Event colours
+(gantt.json) and every chart in run order — and the editor for the selected
+entry on the right. Each setting has one home:
+  • chart on/off per run      → Quick Run table
+  • chart order               → ▲▼ here (saved straight to batch_profile.json)
+  • Y limits                  → defaults here; Quick Run overrides per run
+  • image size, fonts, grid   → Global style
+"""
 
 import json
 import os
 import re
+import shutil
 
 from dash import Input, Output, State, ctx, html, no_update, ALL, MATCH
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from utils.constants import load_settings, save_settings
+from utils.constants import (DEFAULT_AESTHETICS_PATH, DEFAULT_CONFIGS_DIR, GANTT_FILENAME,
+                             RESERVED_CONFIG_FILENAMES, load_settings, save_settings,
+                             user_gantt_path)
+from backend.batch_profile import BatchProfileManager
+from backend.units import AUTO, base_unit, factor, resolve_unit
 
 from app.config_manager_layout import (
-    COLOUR_PALETTES, CFG_TYPE_SERIES, CFG_TYPE_GANTT, CFG_TYPE_AESTHETICS,
+    COLOUR_PALETTES, CFG_TYPE_SERIES, CFG_TYPE_GANTT,
     _series_row, _gantt_color_row, _palette_color_row,
 )
 
@@ -21,7 +35,7 @@ from app.config_manager_layout import (
 # Filenames that are never shown in the chart file list
 _AESTHETICS_FILENAME   = 'aesthetics.json'
 _BATCH_PROFILE_FILENAME = 'batch_profile.json'
-_RESERVED = {_AESTHETICS_FILENAME, _BATCH_PROFILE_FILENAME}
+_RESERVED = set(RESERVED_CONFIG_FILENAMES)
 
 def _load_last_folder() -> str:
     folder = load_settings().get('last_config_folder', '')
@@ -80,11 +94,13 @@ def _build_config_from_form(
     for i in range(n_series):
         kw_raw   = series_kws[i] if series_kws and i < len(series_kws) else ""
         keywords = [k.strip() for k in kw_raw.split(",") if k.strip()]
+        vcol = ((series_vcols[i] if series_vcols else "") or "").strip()
         series.append({
             "name":                  (series_names[i]    if series_names    else ""),
-            "value_column":          (series_vcols[i]    if series_vcols    else ""),
-            "value_column_keywords": keywords,
-            "line_color":            _parse_color(series_color_hexes[i] if series_color_hexes else "#1f77b4"),
+            # Metric-based charts pick columns themselves — omit empty fields.
+            **({"value_column": vcol} if vcol else {}),
+            **({"value_column_keywords": keywords} if keywords else {}),
+            "line_color":           _parse_color(series_color_hexes[i] if series_color_hexes else "#1f77b4"),
             "linewidth":             _safe_float(series_linewidths[i]   if series_linewidths  else 1.5, 1.5),
             "linestyle":             (series_linestyles[i] if series_linestyles else "-"),
             "alpha":                 _safe_float(series_alphas[i]       if series_alphas      else 0.65, 0.65),
@@ -110,6 +126,22 @@ def _build_config_from_form(
     if x_max not in (None, ""):  cfg["axis"]["x_max"] = str(x_max)
 
     return cfg
+
+
+_FORM_AXIS_KEYS = {"x_label", "y_label", "y_min", "y_max", "x_min", "x_max"}
+
+
+def _merge_into(base: dict, form: dict) -> dict:
+    """Overlay the form's fields onto the file being edited, keeping keys the
+    form doesn't show (e.g. 'metric', '_metric_help') so a save never breaks
+    a metric-based chart."""
+    out = dict(base or {})
+    for k in ("_description", "_usage", "series"):
+        out[k] = form[k]
+    out["chart"] = {**(base or {}).get("chart", {}), **form["chart"]}
+    out["axis"] = {**{k: v for k, v in (base or {}).get("axis", {}).items()
+                      if k not in _FORM_AXIS_KEYS}, **form["axis"]}
+    return out
 
 
 def _build_aesthetics_from_form(
@@ -280,73 +312,130 @@ def _populate_gantt_form(cfg: dict):
     }
 
 
-# ── File list renderer ────────────────────────────────────────────────────────
 
-def _render_file_list(files: list[str], selected: str | None) -> list:
-    from backend.batch_profile import BATCH_PROFILE_FILENAME
-    if not files:
-        return [html.P("No JSON files found in this folder.",
-                       className="text-muted small mb-0")]
-    items = []
-    for f in files:
-        if f == BATCH_PROFILE_FILENAME:
-            # Show as read-only — not selectable, just informational
-            items.append(
-                dbc.ListGroupItem(
-                    html.Div([
-                        html.Span("🔒 ", style={"fontSize": "13px"}),
-                        html.Span(f, className="small text-muted"),
-                        dbc.Badge(
-                            "read-only · managed by Batch Profile",
-                            color="warning", text_color="dark",
-                            className="ms-2",
-                            style={"fontSize": "10px"},
-                        ),
-                    ]),
-                    disabled=True,
-                    style={"padding": "6px 12px", "opacity": "0.65",
-                           "cursor": "not-allowed"},
-                )
-            )
-        else:
-            items.append(
-                dbc.ListGroupItem(
-                    html.Div([
-                        html.Span("📄 ", style={"fontSize": "13px"}),
-                        html.Span(f, className="small"),
-                    ]),
-                    id={"type": "cfgmgr-file-item", "index": f},
-                    action=True,
-                    active=(f == selected),
-                    style={"cursor": "pointer", "padding": "6px 12px"},
-                    n_clicks=0,
-                )
-            )
-    return [dbc.ListGroup(items, flush=True)]
+
+# ── List rows ─────────────────────────────────────────────────────────────────
+
+def _read_json(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _chip(text, color="light", title=None):
+    return dbc.Badge(text, color=color, text_color="dark" if color == "light" else None,
+                     className="cm-chip me-1 border", title=title)
+
+
+def _y_chip(cfg):
+    axis = cfg.get("axis", {})
+    lo, hi = axis.get("y_min"), axis.get("y_max")
+    if lo is None or hi is None:
+        return _chip("Y auto", title="Default Y range: fit to the data")
+    base = base_unit(cfg)
+    unit = resolve_unit(AUTO, base, lo, hi) if base else ""
+    k    = factor(unit, base) if base else 1.0
+    return _chip(f"Y {lo / k:.4g} – {hi / k:.4g} {unit or ''}".rstrip(),
+                 title="Default Y range — Quick Run can override it per run")
+
+
+def _chart_summary(cfg):
+    n = len(cfg.get("series") or [])
+    chips = [_chip(cfg["metric"].replace("_", " "), "info", "Columns picked automatically "
+                   "for the export brand and wiring") if cfg.get("metric") else None,
+             _chip(f"{n} series"), _y_chip(cfg)]
+    return [c for c in chips if c], (cfg.get("chart") or {}).get("title")
+
+
+def _style_summary(path):
+    a     = _read_json(path)
+    chart = a.get("chart", {})
+    res   = chart.get("resolution_px") or [2560, 1440]
+    font  = a.get("font", {})
+    return [_chip(f"{res[0]}×{res[1]} px"), _chip(f"{chart.get('dpi', 96)} dpi"),
+            _chip(font.get("family", "sans-serif")),
+            _chip("grid on" if a.get("grid", {}).get("visible", True) else "grid off")]
+
+
+def _events_source(folder):
+    """Where the event colours in use come from (shown under the list row)."""
+    if folder and os.path.isfile(os.path.join(folder, GANTT_FILENAME)):
+        return "gantt.json in this folder"
+    return "this PC" if os.path.isfile(user_gantt_path()) else "built-in"
+
+
+def _events_summary(gantt_cfg):
+    colors  = gantt_cfg.get("gantt_colors", {})
+    mapped  = [k for k in colors if not k.startswith("_") and k != "default_palette"]
+    palette = colors.get("default_palette") or []
+    return [_chip(f"{len(mapped)} test IDs coloured"), _chip(f"palette of {len(palette)}"),
+            _chip(f"bar alpha {gantt_cfg.get('gantt', {}).get('bar_alpha', 0.3)}")]
+
+
+def _row(key, icon, name, chips, subtitle=None, active=False, order=None, n=0, editable=True):
+    left = [html.Div([html.Span(icon + " ", className="me-1"), html.B(name, className="small"),
+                      html.Small(f"  {subtitle}", className="text-muted") if subtitle else None]),
+            html.Div(chips, className="mt-1")]
+    right = []
+    if order is not None:
+        right = [html.Div([
+            dbc.Button("▲", id={"type": "cm-up", "file": key}, size="sm", color="light",
+                       className="py-0 px-1 me-1 border", disabled=order == 0 or not editable,
+                       title="Draw earlier"),
+            dbc.Button("▼", id={"type": "cm-down", "file": key}, size="sm", color="light",
+                       className="py-0 px-1 border", disabled=order == n - 1 or not editable,
+                       title="Draw later"),
+        ], className="d-flex")]
+    badge = ([dbc.Badge(str(order + 1), color="secondary", className="me-2",
+                        style={"minWidth": "24px"})] if order is not None else [])
+    attrs = ({"id": {"type": "cm-row", "key": key}, "n_clicks": 0} if editable
+             else {"style": {"cursor": "default"}})
+    return html.Div(
+        [*badge, html.Div(left, className="flex-grow-1"), *right],
+        className="cm-row d-flex align-items-center px-3 py-2 border-bottom"
+                  + (" active" if active else "") + ("" if editable else " opacity-75"),
+        **attrs,
+    )
+
+
+def _ordered_charts(folder):
+    bpm = BatchProfileManager()
+    bpm.load(folder)
+    return [e["filename"] for e in bpm.merge_with_folder(folder)]
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
 
 def register_config_manager_callbacks(app, state):
-    """Register all Config Manager callbacks on *1_app*."""
+    """Register all Config Manager callbacks on *app*."""
 
-    # ── Browse button → Flask folder-picker endpoint (clientside) ───────
-    app.clientside_callback(
-        """
-        function(n) {
-            if (!n) return window.dash_clientside.no_update;
-            return fetch('/api/pick-folder?title=Select%20Config%20Folder')
-                .then(r => r.json())
-                .then(d => d.path || window.dash_clientside.no_update)
-                .catch(() => window.dash_clientside.no_update);
-        }
-        """,
-        Output("cfgmgr-folder-path", "value", allow_duplicate=True),
-        Input("btn-cfgmgr-browse",   "n_clicks"),
-        prevent_initial_call=True,
-    )
+    def _folder(value):
+        value = (value or "").strip().strip('"')
+        return value if value and os.path.isdir(value) else ""
 
-    # ── Restore last folder path on page load ────────────────────────────
+    def _picker(title, output):
+        app.clientside_callback(
+            f"""
+            function(n) {{
+                if (!n) return window.dash_clientside.no_update;
+                return fetch('/api/pick-folder?title={title.replace(" ", "%20")}')
+                    .then(r => r.json())
+                    .then(d => d.path || window.dash_clientside.no_update)
+                    .catch(() => window.dash_clientside.no_update);
+            }}
+            """,
+            output[0], output[1], prevent_initial_call=True,
+        )
+
+    # ── Folder: browse / restore / built-in / copy built-in ──────────────────
+    _picker("Select Config Folder", (Output("cfgmgr-folder-path", "value", allow_duplicate=True),
+                                     Input("btn-cfgmgr-browse", "n_clicks")))
+    _picker("Copy built-in charts to folder", (Output("store-cm-copy-target", "data"),
+                                               Input("btn-cfgmgr-copy", "n_clicks")))
+
     @app.callback(
         Output("cfgmgr-folder-path", "value"),
         Input("cfgmgr-folder-path",  "id"),
@@ -354,101 +443,200 @@ def register_config_manager_callbacks(app, state):
     def restore_last_folder(_):
         return _load_last_folder()
 
-    # ── Drop any file from folder → extract folder path ──────────────────
     @app.callback(
         Output("cfgmgr-folder-path", "value", allow_duplicate=True),
-        Input("upload-cfgmgr-folder", "filename"),
-        State("cfgmgr-folder-path",   "value"),
+        Input("btn-cfgmgr-builtin", "n_clicks"),
         prevent_initial_call=True,
     )
-    def cfgmgr_folder_drop(filename, current):
-        if not filename:
-            raise PreventUpdate
-        bases = ([os.path.dirname(current)] if current else []) + [os.getcwd()]
-        for base in bases:
-            candidate = os.path.join(base, filename)
-            if os.path.isfile(candidate):
-                return os.path.dirname(os.path.abspath(candidate))
-        return os.getcwd()
+    def use_builtin(_):
+        return ""
 
-    # ── Refresh file list ─────────────────────────────────────────────────
     @app.callback(
-        Output("cfgmgr-file-list",     "children"),
+        Output("cfgmgr-folder-path", "value", allow_duplicate=True),
+        Output("cfgmgr-status", "children", allow_duplicate=True),
+        Input("store-cm-copy-target", "data"),
+        prevent_initial_call=True,
+    )
+    def copy_builtin(target):
+        if not target or not os.path.isdir(target):
+            raise PreventUpdate
+        copied, kept = 0, 0
+        for f in os.listdir(DEFAULT_CONFIGS_DIR):
+            if not f.lower().endswith(".json"):
+                continue
+            dst = os.path.join(target, f)
+            if os.path.exists(dst):
+                kept += 1
+                continue
+            try:
+                shutil.copy2(os.path.join(DEFAULT_CONFIGS_DIR, f), dst)
+                copied += 1
+            except OSError as e:
+                return no_update, dbc.Alert(f"❌ Copy failed: {e}", color="danger",
+                                            className="py-1 mb-0")
+        note = f" ({kept} existing file(s) kept)" if kept else ""
+        return target, dbc.Alert(f"✓ Copied {copied} file(s) to {target}{note}",
+                                 color="success", className="py-1 mb-0")
+
+    # ── List ─────────────────────────────────────────────────────────────────
+    @app.callback(
+        Output("cfgmgr-list",          "children"),
         Output("cfgmgr-folder-status", "children"),
-        Output("btn-cfgmgr-edit",      "disabled"),
-        Output("btn-cfgmgr-clone",     "disabled"),
-        Output("btn-cfgmgr-delete",    "disabled"),
-        Input("btn-cfgmgr-refresh",    "n_clicks"),
+        Output("btn-cfgmgr-new",       "disabled"),
         Input("cfgmgr-folder-path",    "value"),
-        State("store-cfgmgr-selected", "data"),
-        prevent_initial_call=True,
+        Input("btn-cfgmgr-refresh",    "n_clicks"),
+        Input("store-cm-version",      "data"),
+        Input("store-cm-selected",     "data"),
     )
-    def refresh_file_list(_, folder, selected):
-        if folder and folder.strip() and os.path.isdir(folder.strip()):
-            _save_last_folder(folder.strip())
-        if not folder or not folder.strip():
-            return (
-                [html.P("Enter a folder path above and click Refresh.",
-                        className="text-muted small")],
-                "", True, True, True,
-            )
-        folder = folder.strip()
-        if not os.path.isdir(folder):
-            return (
-                [html.P("Folder not found.", className="text-danger small")],
-                dbc.Alert(f"❌ Not a valid directory: {folder}",
-                          color="danger", className="py-1 mb-0"),
-                True, True, True,
-            )
-        files = _list_json_files(folder)
-        if selected not in files:
-            selected = None
-        status = dbc.Alert(
-            f"✓ {len(files)} JSON file(s) in {folder}",
-            color="success", className="py-1 mb-0",
-        )
-        has_sel = selected is not None
-        return (
-            _render_file_list(files, selected),
-            status,
-            not has_sel, not has_sel, not has_sel,
-        )
+    def render_list(folder_value, _r, _v, selected):
+        folder = _folder(folder_value)
+        typed  = (folder_value or "").strip()
+        if typed and not folder:
+            status = html.Span(f"✗ Folder not found: {typed}", className="text-danger")
+        elif folder:
+            _save_last_folder(folder)
+            status = f"Editing {folder} — Quick Run uses these charts."
+        else:
+            _save_last_folder("")
+            status = ("Quick Run uses the built-in charts (read-only). Copy them to a folder "
+                      "to change charts or Global style.")
+        sel_key = f"{selected['kind']}:{selected.get('file') or ''}" if selected else None
+        src     = folder or DEFAULT_CONFIGS_DIR
+        aes     = os.path.join(src, _AESTHETICS_FILENAME)
+        rows = [
+            _row("style:", "🎨", "Global style",
+                 _style_summary(aes if os.path.isfile(aes) else DEFAULT_AESTHETICS_PATH),
+                 subtitle="aesthetics.json", active=sel_key == "style:"),
+            _row("events:", "🏷", "Event colours",
+                 _events_summary(state.refresh_gantt(folder).config or {}),
+                 subtitle=_events_source(folder), active=sel_key == "events:"),
+            html.Div(html.Small("Charts — drawn in this order", className="text-muted fw-semibold"),
+                     className="px-3 pt-2 pb-1 bg-light border-bottom"),
+        ]
+        files = _ordered_charts(src)
+        for i, f in enumerate(files):
+            cfg = _read_json(os.path.join(src, f))
+            if _detect_config_type(cfg) == CFG_TYPE_GANTT:
+                chips, title = _events_summary(cfg), "event colours"
+            else:
+                chips, title = _chart_summary(cfg)
+            rows.append(_row(f"chart:{f}", "📈", os.path.splitext(f)[0], chips, subtitle=title,
+                             active=sel_key == f"chart:{f}", order=i, n=len(files),
+                             editable=bool(folder)))
+        if not files:
+            rows.append(html.P("No chart configs in this folder — click ➕ New chart.",
+                               className="text-muted small m-3"))
+        return rows, status, not folder
 
-    # ── Click a file item → select it ────────────────────────────────────
+    # ── Selection ────────────────────────────────────────────────────────────
     @app.callback(
-        Output("store-cfgmgr-selected", "data"),
-        Output("btn-cfgmgr-edit",       "disabled", allow_duplicate=True),
-        Output("btn-cfgmgr-clone",      "disabled", allow_duplicate=True),
-        Output("btn-cfgmgr-delete",     "disabled", allow_duplicate=True),
-        Input({"type": "cfgmgr-file-item", "index": ALL}, "n_clicks"),
+        Output("store-cm-selected", "data", allow_duplicate=True),
+        Input({"type": "cm-row", "key": ALL}, "n_clicks"),
+        Input("btn-cfgmgr-new", "n_clicks"),
+        State("store-cm-selected", "data"),
         prevent_initial_call=True,
     )
-    def select_file(n_clicks_list):
-        if not any(n_clicks_list):
+    def select(_clicks, _new, current):
+        trig = ctx.triggered_id
+        if trig == "btn-cfgmgr-new":
+            return {"kind": "new", "file": None}
+        if not isinstance(trig, dict) or not ctx.triggered[0]["value"]:
             raise PreventUpdate
-        triggered = ctx.triggered_id
-        if not triggered:
+        kind, _, f = trig["key"].partition(":")
+        new = {"kind": kind, "file": f or None}
+        if new == current:
             raise PreventUpdate
-        return triggered["index"], False, False, False
+        return new
 
-    # ── Highlight selected item ───────────────────────────────────────────
+    # A folder change drops a chart selection that may no longer exist.
     @app.callback(
-        Output({"type": "cfgmgr-file-item", "index": ALL}, "active"),
-        Input("store-cfgmgr-selected", "data"),
-        State({"type": "cfgmgr-file-item", "index": ALL}, "id"),
+        Output("store-cm-selected", "data", allow_duplicate=True),
+        Input("cfgmgr-folder-path", "value"),
+        State("store-cm-selected", "data"),
         prevent_initial_call=True,
     )
-    def highlight_selected(selected, ids):
-        return [item["index"] == selected for item in ids]
+    def reset_selection(_, current):
+        if current and current["kind"] in ("chart", "new"):
+            return None
+        raise PreventUpdate
+
+    # ── Order (▲▼) — saved straight to batch_profile.json ───────────────────
+    @app.callback(
+        Output("store-cm-version", "data", allow_duplicate=True),
+        Output("cfgmgr-status", "children", allow_duplicate=True),
+        Input({"type": "cm-up", "file": ALL}, "n_clicks"),
+        Input({"type": "cm-down", "file": ALL}, "n_clicks"),
+        State("cfgmgr-folder-path", "value"),
+        State("store-cm-version", "data"),
+        prevent_initial_call=True,
+    )
+    def move(_up, _down, folder_value, version):
+        trig, folder = ctx.triggered_id, _folder(folder_value)
+        if not isinstance(trig, dict) or not ctx.triggered[0]["value"] or not folder:
+            raise PreventUpdate
+        files = _ordered_charts(folder)
+        name  = trig["file"].partition(":")[2]
+        if name not in files:
+            raise PreventUpdate
+        i = files.index(name)
+        j = i + (-1 if trig["type"] == "cm-up" else 1)
+        if not 0 <= j < len(files):
+            raise PreventUpdate
+        files[i], files[j] = files[j], files[i]
+        if not BatchProfileManager().save(folder, files):
+            return no_update, dbc.Alert("❌ Could not save the order — check folder permissions.",
+                                        color="danger", className="py-1 mb-0")
+        return (version or 0) + 1, no_update
+
+    # ── Editor panel: which form + header buttons ────────────────────────────
+    hidden, shown, btn = {"display": "none"}, {"display": "block"}, {"display": "inline-block"}
 
     @app.callback(
-        Output("cfg-editor-modal",             "is_open",  allow_duplicate=True),
-        Output("cfg-editor-title",             "children"),
+        Output("cm-placeholder",     "style"),
+        Output("cm-chart-editor",    "style"),
+        Output("cm-style-editor",    "style"),
+        Output("cfg-editor-title",   "children"),
+        Output("btn-cfg-save",       "style"),
+        Output("btn-aes-save",       "style"),
+        Output("btn-cm-revert",      "style"),
+        Output("btn-cfgmgr-clone",   "style"),
+        Output("btn-cfgmgr-delete",  "style"),
+        Output("cfg-filename-row",   "style"),
+        Input("store-cm-selected",   "data"),
+        Input("store-cfgmgr-edit-mode", "data"),
+        State("cfgmgr-folder-path",  "value"),
+    )
+    def editor_panel(selected, mode, folder_value):
+        if not selected:
+            return (shown, hidden, hidden, "Select an entry on the left",
+                    hidden, hidden, hidden, hidden, hidden, hidden)
+        kind, f = selected["kind"], selected.get("file")
+        name = os.path.splitext(f or "")[0]
+        if kind == "style":
+            can_edit = bool(_folder(folder_value))
+            return (hidden, hidden, shown,
+                    "🎨 Global style" + ("" if can_edit else " — built-in (read-only)"),
+                    hidden, btn if can_edit else hidden, btn, hidden, hidden, hidden)
+        if kind == "events":
+            return (hidden, shown, hidden, "🏷 Event colours",
+                    btn, hidden, btn, hidden, hidden, hidden)
+        if kind == "new":
+            return (hidden, shown, hidden, "➕ New chart",
+                    btn, hidden, hidden, hidden, hidden, shown)
+        if mode == "clone":
+            return (hidden, shown, hidden, f"📋 Copy of {name}",
+                    btn, hidden, btn, hidden, hidden, shown)
+        return (hidden, shown, hidden, f"📈 {name}", btn, hidden, btn, btn, btn, hidden)
+
+    # ── Chart / event-colour form: load from disk ────────────────────────────
+    series_defaults = ([_series_row(0)], 1, "", "", "", None, None, "", "")
+    gantt_defaults  = (0.3, 1.0, "#000000", "#000000", 0.2, [], 0, [], 0)
+
+    @app.callback(
         Output("store-cfgmgr-edit-mode",       "data"),
         Output("cfg-filename",                 "value"),
         Output("cfg-description",              "value"),
         Output("cfg-usage",                    "value"),
-        # Series-data section
         Output("cfg-series-container",         "children"),
         Output("store-series-count",           "data"),
         Output("cfg-chart-title",              "value"),
@@ -458,7 +646,6 @@ def register_config_manager_callbacks(app, state):
         Output("cfg-y-max",                    "value"),
         Output("cfg-x-min",                    "value"),
         Output("cfg-x-max",                    "value"),
-        # Gantt section
         Output("cfg-gantt-bar-alpha",          "value"),
         Output("cfg-gantt-bar-height",         "value"),
         Output("cfg-gantt-edge-swatch",        "value"),
@@ -468,291 +655,132 @@ def register_config_manager_callbacks(app, state):
         Output("store-gantt-color-count",      "data"),
         Output("cfg-gantt-palette-container",  "children"),
         Output("store-gantt-palette-count",    "data"),
-        # Collapse visibility + type badge
         Output("cfg-gantt-collapse",           "is_open"),
         Output("cfg-series-sections-collapse", "is_open"),
         Output("store-cfg-type",               "data"),
         Output("cfg-type-badge",               "children"),
-        Output("cfg-save-status",              "children", allow_duplicate=True),
-        Input("btn-cfgmgr-new",                "n_clicks"),
-        Input("btn-cfgmgr-edit",               "n_clicks"),
+        Input("store-cm-selected",             "data"),
+        Input("store-cm-reload",               "data"),
         Input("btn-cfgmgr-clone",              "n_clicks"),
-        State("store-cfgmgr-selected",         "data"),
         State("cfgmgr-folder-path",            "value"),
         prevent_initial_call=True,
     )
-    def open_editor(n_new, n_edit, n_clone, selected, folder):
-        trigger = ctx.triggered_id
-
-        SERIES_DEFAULTS = (
-            [_series_row(0)], 1,
-            "",       # chart_title
-            "", "",   # x_label, y_label
-            "", "", "", "",  # y_min, y_max, x_min, x_max
-        )
-        GANTT_DEFAULTS = (
-            0.3, 1.0, "#000000", "#000000", 0.2,
-            [], 0,
-            [], 0,
-        )
-
-        def _series_badge():
-            return dbc.Badge("📈 Series Config", color="primary", className="fs-6")
-
-        def _gantt_badge():
-            return dbc.Badge("🎨 Gantt / Event Config", color="success", className="fs-6")
-
-        BLANK = (
-            True, "New Config", "new",
-            "", "", "",
-            *SERIES_DEFAULTS,
-            *GANTT_DEFAULTS,
-            False, True, CFG_TYPE_SERIES, _series_badge(), "",
-        )
-
-        if trigger == "btn-cfgmgr-new":
-            return BLANK
-
-        if not selected or not folder:
+    def load_form(selected, _reload, _clone, folder_value):
+        if not selected or selected["kind"] == "style":
             raise PreventUpdate
+        kind = selected["kind"]
+        if ctx.triggered_id == "btn-cfgmgr-clone":
+            if kind != "chart":
+                raise PreventUpdate
+            # Keep the loaded form; only the target file name changes.
+            stem = os.path.splitext(selected["file"])[0]
+            return ("clone", f"{stem}_copy.json", *([no_update] * 24))
+        if kind == "new":
+            return ("new", "", "", "", *series_defaults, *gantt_defaults,
+                    False, True, CFG_TYPE_SERIES, None)
 
-        path = os.path.join(folder.strip(), selected)
-        try:
-            with open(path, encoding="utf-8") as f:
-                cfg = json.load(f)
-        except Exception:
-            raise PreventUpdate
-
-        cfg_type = _detect_config_type(cfg)
-
-        if trigger == "btn-cfgmgr-edit":
-            mode  = "edit"
-            title = f"Edit — {selected}"
-            fname = selected
-        else:
-            mode  = "clone"
-            title = f"Clone — {selected}"
-            fname = ""
-
-        if cfg_type == CFG_TYPE_GANTT:
+        path = (state.refresh_gantt(_folder(folder_value)).config_path if kind == "events"
+                else os.path.join(_folder(folder_value), selected["file"]))
+        cfg = _read_json(path) if path else {}
+        if kind == "events" or _detect_config_type(cfg) == CFG_TYPE_GANTT:
             gv = _populate_gantt_form(cfg)
-            return (
-                True, title, mode,
-                fname,
-                cfg.get("_description", ""),
-                cfg.get("_usage", ""),
-                # Series sections — blank/defaults (will be collapsed)
-                *SERIES_DEFAULTS,
-                # Gantt section
-                gv["bar_alpha"], gv["bar_height"],
-                gv["edge_hex"], gv["edge_hex"], gv["edge_width"],
-                gv["color_rows"], gv["n_colors"],
-                gv["palette_rows"], gv["n_palette"],
-                # Collapse states: gantt open, series closed
-                True, False, CFG_TYPE_GANTT, _gantt_badge(), "",
-            )
-
-        # ── Series config ─────────────────────────────────────────────────
+            badge = (html.Small("Colours of the test-schedule bars on every chart. "
+                                + ("Saved as gantt.json in the config folder, so everyone "
+                                   "using the folder gets them." if _folder(folder_value) else
+                                   "Saved for this PC (replaces the built-in colours)."),
+                                className="text-muted")
+                     if kind == "events" else None)
+            return ("events" if kind == "events" else "edit", selected.get("file") or "",
+                    cfg.get("_description", ""), cfg.get("_usage", ""),
+                    *series_defaults,
+                    gv["bar_alpha"], gv["bar_height"], gv["edge_hex"], gv["edge_hex"],
+                    gv["edge_width"], gv["color_rows"], gv["n_colors"],
+                    gv["palette_rows"], gv["n_palette"],
+                    True, False, CFG_TYPE_GANTT, badge)
         rows, n_series, fv = _populate_form_from_config(cfg)
-        return (
-            True, title, mode,
-            fname, fv["description"], fv["usage"],
-            rows, n_series,
-            fv["chart_title"],
-            fv["x_label"], fv["y_label"],
-            fv["y_min"], fv["y_max"], fv["x_min"], fv["x_max"],
-            # Gantt section — blank/defaults (will be collapsed)
-            *GANTT_DEFAULTS,
-            # Collapse states: series open, gantt closed
-            False, True, CFG_TYPE_SERIES, _series_badge(), "",
-        )
+        badge = (html.Small(f"Metric: {cfg['metric']} — columns are picked automatically for "
+                            "the export brand and wiring; the series below are colour/style "
+                            "slots in phase order.", className="text-muted")
+                 if cfg.get("metric") else None)
+        return ("edit", selected["file"], fv["description"], fv["usage"],
+                rows, n_series, fv["chart_title"], fv["x_label"], fv["y_label"],
+                fv["y_min"], fv["y_max"], fv["x_min"], fv["x_max"],
+                *gantt_defaults, False, True, CFG_TYPE_SERIES, badge)
 
-    # ── Add series ────────────────────────────────────────────────────────
     @app.callback(
-        Output("cfg-series-container", "children", allow_duplicate=True),
-        Output("store-series-count",   "data",     allow_duplicate=True),
-        Input("btn-add-series",        "n_clicks"),
-        State("store-series-count",    "data"),
-        State("cfg-series-container",  "children"),
+        Output("store-cm-reload", "data", allow_duplicate=True),
+        Output("cfg-save-status", "children", allow_duplicate=True),
+        Input("btn-cm-revert", "n_clicks"),
+        State("store-cm-reload", "data"),
         prevent_initial_call=True,
     )
-    def add_series(_, count, current):
-        count = count or 0
-        return (current or []) + [_series_row(count)], count + 1
+    def revert(_, n):
+        return (n or 0) + 1, html.Span("↺ Reloaded from file", className="text-muted")
 
-    # ── Remove series ─────────────────────────────────────────────────────
-    @app.callback(
-        Output("cfg-series-container", "children", allow_duplicate=True),
-        Output("store-series-count",   "data",     allow_duplicate=True),
-        Input({"type": "btn-remove-series", "index": ALL}, "n_clicks"),
-        State("cfg-series-container",  "children"),
-        State("store-series-count",    "data"),
-        prevent_initial_call=True,
-    )
-    def remove_series(n_clicks_list, current, count):
-        if not any(n for n in n_clicks_list if n):
-            raise PreventUpdate
-        triggered = ctx.triggered_id
-        if triggered is None:
-            raise PreventUpdate
-        remove_idx = triggered["index"]
-        new_rows = [
-            r for r in (current or [])
-            if not (isinstance(r, dict)
-                    and r.get("props", {}).get("id") == f"series-card-{remove_idx}")
-        ]
-        return new_rows, max(0, (count or 1) - 1)
-
-    # ── Add gantt Test ID colour row ──────────────────────────────────────
-    @app.callback(
-        Output("cfg-gantt-colors-container", "children", allow_duplicate=True),
-        Output("store-gantt-color-count",    "data",     allow_duplicate=True),
-        Input("btn-add-gantt-color",         "n_clicks"),
-        State("store-gantt-color-count",     "data"),
-        State("cfg-gantt-colors-container",  "children"),
-        prevent_initial_call=True,
-    )
-    def add_gantt_color(_, count, current):
-        count = count or 0
-        return (current or []) + [_gantt_color_row(count)], count + 1
-
-    # ── Remove gantt Test ID colour row ──────────────────────────────────
-    @app.callback(
-        Output("cfg-gantt-colors-container", "children", allow_duplicate=True),
-        Output("store-gantt-color-count",    "data",     allow_duplicate=True),
-        Input({"type": "btn-remove-gantt-color", "index": ALL}, "n_clicks"),
-        State("cfg-gantt-colors-container",  "children"),
-        State("store-gantt-color-count",     "data"),
-        prevent_initial_call=True,
-    )
-    def remove_gantt_color(n_clicks_list, current, count):
-        if not any(n for n in n_clicks_list if n):
-            raise PreventUpdate
-        triggered = ctx.triggered_id
-        if triggered is None:
-            raise PreventUpdate
-        remove_idx = triggered["index"]
-        new_rows = [
-            r for r in (current or [])
-            if not (isinstance(r, dict)
-                    and r.get("props", {}).get("id") == f"gantt-color-card-{remove_idx}")
-        ]
-        return new_rows, max(0, (count or 1) - 1)
-
-    # ── Add default palette colour row ────────────────────────────────────
-    @app.callback(
-        Output("cfg-gantt-palette-container", "children", allow_duplicate=True),
-        Output("store-gantt-palette-count",   "data",     allow_duplicate=True),
-        Input("btn-add-palette-color",        "n_clicks"),
-        State("store-gantt-palette-count",    "data"),
-        State("cfg-gantt-palette-container",  "children"),
-        prevent_initial_call=True,
-    )
-    def add_palette_color(_, count, current):
-        count = count or 0
-        return (current or []) + [_palette_color_row(count)], count + 1
-
-    # ── Remove default palette colour row ─────────────────────────────────
-    @app.callback(
-        Output("cfg-gantt-palette-container", "children", allow_duplicate=True),
-        Output("store-gantt-palette-count",   "data",     allow_duplicate=True),
-        Input({"type": "btn-remove-palette-color", "index": ALL}, "n_clicks"),
-        State("cfg-gantt-palette-container",  "children"),
-        State("store-gantt-palette-count",    "data"),
-        prevent_initial_call=True,
-    )
-    def remove_palette_color(n_clicks_list, current, count):
-        if not any(n for n in n_clicks_list if n):
-            raise PreventUpdate
-        triggered = ctx.triggered_id
-        if triggered is None:
-            raise PreventUpdate
-        remove_idx = triggered["index"]
-        new_rows = [
-            r for r in (current or [])
-            if not (isinstance(r, dict)
-                    and r.get("props", {}).get("id") == f"gantt-palette-card-{remove_idx}")
-        ]
-        return new_rows, max(0, (count or 1) - 1)
-
-    # ── Colour swatch ↔ hex sync (series) ────────────────────────────────
-    app.clientside_callback(
-        "function(v) { return v; }",
-        Output({"type": "series-color-hex",    "index": MATCH}, "value"),
-        Input( {"type": "series-color-swatch", "index": MATCH}, "value"),
-        prevent_initial_call=True,
-    )
-    app.clientside_callback(
-        """function(v) {
-            if (!v) return window.dash_clientside.no_update;
-            v = v.trim();
-            return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
-        }""",
-        Output({"type": "series-color-swatch", "index": MATCH}, "value"),
-        Input( {"type": "series-color-hex",    "index": MATCH}, "value"),
-        prevent_initial_call=True,
-    )
-
-    # ── Colour swatch ↔ hex sync (gantt Test ID colours) ─────────────────
-    app.clientside_callback(
-        "function(v) { return v; }",
-        Output({"type": "gantt-color-hex",    "index": MATCH}, "value"),
-        Input( {"type": "gantt-color-swatch", "index": MATCH}, "value"),
-        prevent_initial_call=True,
-    )
-    app.clientside_callback(
-        """function(v) {
-            if (!v) return window.dash_clientside.no_update;
-            v = v.trim();
-            return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
-        }""",
-        Output({"type": "gantt-color-swatch", "index": MATCH}, "value"),
-        Input( {"type": "gantt-color-hex",    "index": MATCH}, "value"),
-        prevent_initial_call=True,
-    )
-
-    # ── Colour swatch ↔ hex sync (gantt palette colours) ─────────────────
-    app.clientside_callback(
-        "function(v) { return v; }",
-        Output({"type": "gantt-palette-hex",    "index": MATCH}, "value"),
-        Input( {"type": "gantt-palette-swatch", "index": MATCH}, "value"),
-        prevent_initial_call=True,
-    )
-    app.clientside_callback(
-        """function(v) {
-            if (!v) return window.dash_clientside.no_update;
-            v = v.trim();
-            return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
-        }""",
-        Output({"type": "gantt-palette-swatch", "index": MATCH}, "value"),
-        Input( {"type": "gantt-palette-hex",    "index": MATCH}, "value"),
-        prevent_initial_call=True,
-    )
-
-    # ── Colour swatch ↔ hex sync (bg, grid, gantt edge) ──────────────────
-    for swatch_id, hex_id in [
-        ("cfg-bg-color-swatch",   "cfg-bg-color-hex"),
-        ("cfg-grid-color-swatch", "cfg-grid-color-hex"),
-        ("cfg-gantt-edge-swatch", "cfg-gantt-edge-hex"),
+    # ── Add / remove rows in the chart & gantt forms ─────────────────────────
+    for add_btn, container, count_store, row_fn in [
+        ("btn-add-series",        "cfg-series-container",        "store-series-count",        _series_row),
+        ("btn-add-gantt-color",   "cfg-gantt-colors-container",  "store-gantt-color-count",   _gantt_color_row),
+        ("btn-add-palette-color", "cfg-gantt-palette-container", "store-gantt-palette-count", _palette_color_row),
     ]:
-        app.clientside_callback(
-            "function(v) { return v; }",
-            Output(hex_id,    "value", allow_duplicate=True),
-            Input( swatch_id, "value"),
+        def _add(_, count, current, row_fn=row_fn):
+            count = count or 0
+            return (current or []) + [row_fn(count)], count + 1
+        app.callback(
+            Output(container,   "children", allow_duplicate=True),
+            Output(count_store, "data",     allow_duplicate=True),
+            Input(add_btn, "n_clicks"),
+            State(count_store, "data"),
+            State(container,   "children"),
             prevent_initial_call=True,
-        )
-        app.clientside_callback(
-            """function(v) {
-                if (!v) return window.dash_clientside.no_update;
-                v = v.trim();
-                return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
-            }""",
-            Output(swatch_id, "value", allow_duplicate=True),
-            Input( hex_id,    "value"),
-            prevent_initial_call=True,
-        )
+        )(_add)
 
-    # ── Apply colour palette ──────────────────────────────────────────────
+    for btn_type, container, count_store, prefix in [
+        ("btn-remove-series",        "cfg-series-container",        "store-series-count",        "series-card"),
+        ("btn-remove-gantt-color",   "cfg-gantt-colors-container",  "store-gantt-color-count",   "gantt-color-card"),
+        ("btn-remove-palette-color", "cfg-gantt-palette-container", "store-gantt-palette-count", "gantt-palette-card"),
+    ]:
+        def _remove(n_clicks_list, current, count, prefix=prefix):
+            if not any(n for n in n_clicks_list if n):
+                raise PreventUpdate
+            idx  = ctx.triggered_id["index"]
+            rows = [r for r in (current or [])
+                    if not (isinstance(r, dict)
+                            and r.get("props", {}).get("id") == f"{prefix}-{idx}")]
+            return rows, max(0, (count or 1) - 1)
+        app.callback(
+            Output(container,   "children", allow_duplicate=True),
+            Output(count_store, "data",     allow_duplicate=True),
+            Input({"type": btn_type, "index": ALL}, "n_clicks"),
+            State(container,    "children"),
+            State(count_store,  "data"),
+            prevent_initial_call=True,
+        )(_remove)
+
+    # ── Colour swatch ↔ hex sync ─────────────────────────────────────────────
+    to_hex = "function(v) { return v; }"
+    to_swatch = """function(v) {
+        if (!v) return window.dash_clientside.no_update;
+        v = v.trim();
+        return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
+    }"""
+    for kind in ("series-color", "gantt-color", "gantt-palette"):
+        app.clientside_callback(to_hex,
+                                Output({"type": f"{kind}-hex", "index": MATCH}, "value"),
+                                Input({"type": f"{kind}-swatch", "index": MATCH}, "value"),
+                                prevent_initial_call=True)
+        app.clientside_callback(to_swatch,
+                                Output({"type": f"{kind}-swatch", "index": MATCH}, "value"),
+                                Input({"type": f"{kind}-hex", "index": MATCH}, "value"),
+                                prevent_initial_call=True)
+    for swatch_id, hex_id in [("cfg-gantt-edge-swatch", "cfg-gantt-edge-hex"),
+                              ("aes-bg-color-swatch",   "aes-bg-color-hex"),
+                              ("aes-grid-color-swatch", "aes-grid-color-hex")]:
+        app.clientside_callback(to_hex, Output(hex_id, "value", allow_duplicate=True),
+                                Input(swatch_id, "value"), prevent_initial_call=True)
+        app.clientside_callback(to_swatch, Output(swatch_id, "value", allow_duplicate=True),
+                                Input(hex_id, "value"), prevent_initial_call=True)
+
     @app.callback(
         Output({"type": "series-color-hex",    "index": ALL}, "value", allow_duplicate=True),
         Output({"type": "series-color-swatch", "index": ALL}, "value", allow_duplicate=True),
@@ -768,30 +796,21 @@ def register_config_manager_callbacks(app, state):
         colors  = [palette[i % len(palette)] for i in range(len(ids))]
         return colors, colors
 
-    # ── Cancel editor ─────────────────────────────────────────────────────
+    # ── Save chart / event colours ───────────────────────────────────────────
     @app.callback(
-        Output("cfg-editor-modal", "is_open", allow_duplicate=True),
-        Input("btn-cfg-cancel",    "n_clicks"),
-        prevent_initial_call=True,
-    )
-    def close_editor(_):
-        return False
-
-    # ── Save chart config (slim) ──────────────────────────────────────────
-    @app.callback(
-        Output("cfg-save-status",       "children",  allow_duplicate=True),
-        Output("cfg-editor-modal",      "is_open",   allow_duplicate=True),
-        Output("cfgmgr-file-list",      "children",  allow_duplicate=True),
-        Output("cfgmgr-action-status",  "children"),
-        Output("store-cfgmgr-selected", "data",      allow_duplicate=True),
+        Output("cfg-save-status",   "children", allow_duplicate=True),
+        Output("store-cm-version",  "data",     allow_duplicate=True),
+        Output("store-cm-selected", "data",     allow_duplicate=True),
+        Output("store-cfgmgr-edit-mode", "data", allow_duplicate=True),
+        Output("store-cm-dirty",    "data",     allow_duplicate=True),
         Input("btn-cfg-save", "n_clicks"),
+        State("store-cm-selected",      "data"),
         State("store-cfgmgr-edit-mode", "data"),
         State("store-cfg-type",         "data"),
         State("cfgmgr-folder-path",     "value"),
         State("cfg-filename",           "value"),
         State("cfg-description",        "value"),
         State("cfg-usage",              "value"),
-        # Series states
         State({"type": "series-name",       "index": ALL}, "value"),
         State({"type": "series-value-col",  "index": ALL}, "value"),
         State({"type": "series-keywords",   "index": ALL}, "value"),
@@ -800,16 +819,13 @@ def register_config_manager_callbacks(app, state):
         State({"type": "series-linewidth",  "index": ALL}, "value"),
         State({"type": "series-linestyle",  "index": ALL}, "value"),
         State({"type": "series-marker",     "index": ALL}, "value"),
-        # Chart (title only — aesthetics live in aesthetics.json)
         State("cfg-chart-title", "value"),
-        # Axis
         State("cfg-x-label", "value"),
         State("cfg-y-label", "value"),
         State("cfg-y-min",   "value"),
         State("cfg-y-max",   "value"),
         State("cfg-x-min",   "value"),
         State("cfg-x-max",   "value"),
-        # Gantt states
         State("cfg-gantt-bar-alpha",  "value"),
         State("cfg-gantt-bar-height", "value"),
         State("cfg-gantt-edge-hex",   "value"),
@@ -817,138 +833,174 @@ def register_config_manager_callbacks(app, state):
         State({"type": "gantt-test-id",     "index": ALL}, "value"),
         State({"type": "gantt-color-hex",   "index": ALL}, "value"),
         State({"type": "gantt-palette-hex", "index": ALL}, "value"),
+        State("store-cm-version", "data"),
         prevent_initial_call=True,
     )
     def save_config(
-        _, mode, cfg_type, folder, filename,
-        description, usage,
+        _, selected, mode, cfg_type, folder_value, filename, description, usage,
         series_names, series_vcols, series_kws, series_alphas,
         series_color_hexes, series_linewidths, series_linestyles, series_markers,
-        chart_title,
-        x_label, y_label, y_min, y_max, x_min, x_max,
+        chart_title, x_label, y_label, y_min, y_max, x_min, x_max,
         gantt_bar_alpha, gantt_bar_height, gantt_edge_hex, gantt_edge_width,
-        gantt_test_ids, gantt_color_hexes, gantt_palette_hexes,
+        gantt_test_ids, gantt_color_hexes, gantt_palette_hexes, version,
     ):
-        ERR = lambda msg: (  # noqa: E731
-            dbc.Alert(msg, color="danger", className="py-1"),
-            True, no_update, no_update, no_update,
-        )
+        def err(msg):
+            return html.Span(msg, className="text-danger"), no_update, no_update, no_update, no_update
 
-        if not folder or not os.path.isdir(folder.strip()):
-            return ERR("❌ Invalid config folder.")
-        if not filename or not filename.strip():
-            return ERR("❌ Please enter a filename.")
-
-        fname = filename.strip()
-        if not fname.lower().endswith(".json"):
-            fname += ".json"
-        fname = re.sub(r'[<>:"/\\|?*]', "_", fname)
-
-        # Prevent accidentally saving over reserved files
-        if fname in _RESERVED:
-            return ERR(f"❌ '{fname}' is a reserved filename. Use the dedicated editor for it.")
-
-        out_path = os.path.join(folder.strip(), fname)
+        if not selected:
+            raise PreventUpdate
+        folder = _folder(folder_value)
+        if mode == "events":
+            out_path = os.path.join(folder, GANTT_FILENAME) if folder else user_gantt_path()
+            fname    = os.path.basename(out_path)
+        else:
+            if not folder:
+                return err("❌ Choose a config folder first.")
+            fname = (filename or "").strip()
+            if not fname:
+                return err("❌ Enter a file name.")
+            if not fname.lower().endswith(".json"):
+                fname += ".json"
+            fname = re.sub(r'[<>:"/\\|?*]', "_", fname)
+            if fname in _RESERVED:
+                return err(f"❌ '{fname}' is a reserved name.")
+            out_path = os.path.join(folder, fname)
+            if mode in ("new", "clone") and os.path.exists(out_path):
+                return err(f"❌ {fname} already exists — pick another name.")
 
         if cfg_type == CFG_TYPE_GANTT:
             cfg = _build_gantt_from_form(
                 fname, description, usage,
                 gantt_bar_alpha, gantt_bar_height, gantt_edge_hex, gantt_edge_width,
-                gantt_test_ids, gantt_color_hexes, gantt_palette_hexes,
-            )
-            n_ids   = len([k for k in cfg.get("gantt_colors", {})
-                           if not k.startswith("_") and k != "default_palette"])
-            summary = f"✓ Saved gantt config: {fname}  ({n_ids} Test IDs)"
+                gantt_test_ids, gantt_color_hexes, gantt_palette_hexes)
+            # Keep gantt keys the form doesn't show (e.g. 'label_color').
+            prev = _read_json(state.refresh_gantt(folder).config_path) or {}
+            cfg["gantt"] = {**prev.get("gantt", {}), **cfg.get("gantt", {})}
         else:
-            cfg = _build_config_from_form(
+            form = _build_config_from_form(
                 fname, description, usage,
                 series_names, series_vcols, series_kws, series_alphas,
                 series_color_hexes, series_linewidths, series_linestyles, series_markers,
-                chart_title,
-                x_label, y_label, y_min, y_max, x_min, x_max,
-            )
-            summary = f"✓ Saved: {fname}  ({len(cfg.get('series', []))} series)"
+                chart_title, x_label, y_label, y_min, y_max, x_min, x_max)
+            # Edit / clone keep the source file's other keys (e.g. 'metric').
+            src = (os.path.join(folder, selected["file"])
+                   if selected.get("file") and mode in ("edit", "clone") else None)
+            cfg = _merge_into(_read_json(src) if src else {}, form)
 
         try:
             with open(out_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            return ERR(f"❌ Error saving: {e}")
+            return err(f"❌ Could not save: {e}")
 
-        files     = _list_json_files(folder.strip())
-        file_list = _render_file_list(files, fname)
-        action    = dbc.Alert(summary, color="success", className="py-1 mb-0")
-        return "", False, file_list, action, fname
+        if mode == "events":
+            state.refresh_gantt(folder)
+            return (html.Span("✓ Saved event colours", className="text-success"),
+                    (version or 0) + 1, no_update, no_update, False)
+        if mode in ("new", "clone"):
+            # New charts join the run order at the end.
+            files = _ordered_charts(folder)
+            BatchProfileManager().save(folder, files + ([fname] if fname not in files else []))
+        return (html.Span(f"✓ Saved {fname}", className="text-success"), (version or 0) + 1,
+                {"kind": "chart", "file": fname}, "edit", False)
 
-    # ── Save aesthetics ───────────────────────────────────────────────────
+    # ── Unsaved edits ────────────────────────────────────────────────────────
+    # Edits live only in the form until Save, so flag them: user typing/clicking
+    # inside the editor marks it dirty (form loads are programmatic, so they
+    # don't). Leaving the entry or generating while dirty asks first.
+    app.clientside_callback(
+        """
+        function(id) {
+            if (window._cmGuard) return window.dash_clientside.no_update;
+            window._cmGuard = true;
+            var inEditor = function(el) {
+                return el && el.closest && el.closest('#cm-chart-editor, #cm-style-editor');
+            };
+            var mark = function(e) {
+                if (!e.isTrusted || !inEditor(e.target) || window._cmDirty) return;
+                window._cmDirty = true;
+                window.dash_clientside.set_props('store-cm-dirty', {data: true});
+            };
+            document.addEventListener('input', mark, true);
+            document.addEventListener('change', mark, true);
+            document.addEventListener('click', function(e) {
+                if (!e.isTrusted || !e.target.closest) return;
+                var b = e.target.closest('button');
+                if (b && inEditor(b)) { mark(e); return; }
+                if (!window._cmDirty) return;
+                var row = e.target.closest('.cm-row:not(.active), #btn-cfgmgr-new');
+                var run = e.target.closest('#wz-run');
+                if (!row && !run) return;
+                var msg = run
+                    ? 'Config Manager has unsaved changes. This run will NOT use them.\\n\\n'
+                      + 'Click Cancel, then Save in Config Manager to use them.\\n\\nGenerate anyway?'
+                    : 'Discard your unsaved changes?';
+                if (!window.confirm(msg)) { e.stopPropagation(); e.preventDefault(); }
+            }, true);
+            return '';
+        }
+        """,
+        Output("store-cm-guard", "data"),
+        Input("store-cm-guard", "id"),
+    )
+
+    app.clientside_callback(
+        """
+        function(dirty) {
+            window._cmDirty = !!dirty;
+            var c = dirty ? 'warning' : 'primary';
+            return [c, c, dirty ? '● Unsaved changes' : ''];
+        }
+        """,
+        Output("btn-cfg-save", "color"),
+        Output("btn-aes-save", "color"),
+        Output("cm-dirty-note", "children"),
+        Input("store-cm-dirty", "data"),
+    )
+
+    # Another entry selected or reverted → the form matches the file again.
     @app.callback(
-        Output("aes-save-status", "children"),
-        Input("btn-aes-save",     "n_clicks"),
-        State("cfgmgr-folder-path",   "value"),
-        State("aes-font-family",      "value"),
-        State("aes-title-fs",         "value"),
-        State("aes-axis-fs",          "value"),
-        State("aes-tick-fs",          "value"),
-        State("aes-legend-fs",        "value"),
-        State("aes-font-scale",       "value"),
-        State("aes-bg-color-hex",     "value"),
-        State("aes-res-w",            "value"),
-        State("aes-res-h",            "value"),
-        State("aes-dpi",              "value"),
-        State("aes-grid-visible",     "value"),
-        State("aes-grid-axis",        "value"),
-        State("aes-grid-linestyle",   "value"),
-        State("aes-grid-alpha",       "value"),
-        State("aes-grid-width",       "value"),
-        State("aes-grid-color-hex",   "value"),
-        State("aes-sp-left",          "value"),
-        State("aes-sp-right",         "value"),
-        State("aes-sp-top",           "value"),
-        State("aes-sp-bottom",        "value"),
-        State("aes-sp-lgx",           "value"),
-        State("aes-sp-lgy",           "value"),
-        State("aes-legend-wrap-w",    "value"),
-        State("aes-pad-top",          "value"),
-        State("aes-pad-sep-above",    "value"),
-        State("aes-pad-sep-below",    "value"),
-        State("aes-gap-slots",        "value"),
-        State("aes-lw-scale",         "value"),
+        Output("store-cm-dirty", "data", allow_duplicate=True),
+        Input("store-cm-selected", "data"),
+        Input("store-cm-reload", "data"),
         prevent_initial_call=True,
     )
-    def save_aesthetics(
-        _, folder,
-        font_family, title_fs, axis_fs, tick_fs, legend_fs, font_scale,
-        bg_color_hex, res_w, res_h, dpi,
-        grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
-        sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
-        legend_wrap_w,
-        pad_top, pad_sep_above, pad_sep_below, gap_slots,
-        lw_scale,
-    ):
-        if not folder or not os.path.isdir(folder.strip()):
-            return dbc.Alert("❌ No valid folder loaded.", color="danger", className="py-1 mb-0")
+    def clear_dirty(*_):
+        return False
 
-        cfg = _build_aesthetics_from_form(
-            font_family, title_fs, axis_fs, tick_fs, legend_fs, font_scale,
-            bg_color_hex, res_w, res_h, dpi,
-            grid_visible, grid_axis, grid_ls, grid_alpha, grid_width, grid_color_hex,
-            sp_left, sp_right, sp_top, sp_bottom, sp_lgx, sp_lgy,
-            legend_wrap_w,
-            pad_top, pad_sep_above, pad_sep_below, gap_slots,
-            lw_scale,
-        )
-        out_path = os.path.join(folder.strip(), _AESTHETICS_FILENAME)
+    # ── Global style (aesthetics.json) ───────────────────────────────────────
+    aes_ids = ["aes-font-family", "aes-title-fs", "aes-axis-fs", "aes-tick-fs", "aes-legend-fs",
+               "aes-font-scale", "aes-bg-color-hex", "aes-res-w", "aes-res-h", "aes-dpi",
+               "aes-grid-visible", "aes-grid-axis", "aes-grid-linestyle", "aes-grid-alpha",
+               "aes-grid-width", "aes-grid-color-hex", "aes-sp-left", "aes-sp-right",
+               "aes-sp-top", "aes-sp-bottom", "aes-sp-lgx", "aes-sp-lgy", "aes-legend-wrap-w",
+               "aes-pad-top", "aes-pad-sep-above", "aes-pad-sep-below", "aes-gap-slots",
+               "aes-lw-scale"]   # order = _build_aesthetics_from_form's arguments
+
+    @app.callback(
+        Output("cfg-save-status",   "children", allow_duplicate=True),
+        Output("store-cm-version",  "data",     allow_duplicate=True),
+        Output("store-cm-dirty",    "data",     allow_duplicate=True),
+        Input("btn-aes-save", "n_clicks"),
+        State("cfgmgr-folder-path", "value"),
+        State("store-cm-version", "data"),
+        *[State(i, "value") for i in aes_ids],
+        prevent_initial_call=True,
+    )
+    def save_aesthetics(_, folder_value, version, *form):
+        folder = _folder(folder_value)
+        if not folder:
+            return (html.Span("❌ Choose a config folder first.", className="text-danger"),
+                    no_update, no_update)
+        out_path = os.path.join(folder, _AESTHETICS_FILENAME)
         try:
             with open(out_path, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, indent=2, ensure_ascii=False)
+                json.dump(_build_aesthetics_from_form(*form), f, indent=2, ensure_ascii=False)
             state.config.reload_aesthetics(out_path)
-            return dbc.Alert(f"✓ Saved & applied aesthetics.json → {out_path}",
-                             color="success", className="py-1 mb-0")
         except Exception as e:
-            return dbc.Alert(f"❌ Error saving aesthetics: {e}",
-                             color="danger", className="py-1 mb-0")
+            return html.Span(f"❌ Could not save: {e}", className="text-danger"), no_update, no_update
+        return html.Span("✓ Saved Global style", className="text-success"), (version or 0) + 1, False
 
-    # ── Load aesthetics into editor when folder changes ───────────────────
     @app.callback(
         Output("aes-font-family",    "value"),
         Output("aes-title-fs",       "value"),
@@ -981,105 +1033,64 @@ def register_config_manager_callbacks(app, state):
         Output("aes-gap-slots",      "value"),
         Output("aes-lw-scale",       "value"),
         Output("aes-load-status",    "children"),
-        Input("btn-cfgmgr-refresh",  "n_clicks"),
-        Input("cfgmgr-folder-path",  "value"),
+        Input("store-cm-selected",   "data"),
+        Input("store-cm-reload",     "data"),
+        State("cfgmgr-folder-path",  "value"),
+        prevent_initial_call=True,
     )
-    def load_aesthetics(_, folder):
-        DEFAULTS = (
-            "sans-serif", 20, 15, 12, 13, 1.0,
-            "#ffffff", "#ffffff", 2560, 1440, 96,
-            "true", "both", "-", 0.3, 1.0, "#505050", "#505050",
-            0.03, 0.92, 0.95, 0.06, 0.92, 0.83,
-            28, 0.5, 0.4, 0.4, 0.5, 1.0,
-            html.Small("Using built-in defaults (aesthetics.json not found).",
-                       className="text-muted"),
-        )
-        if not folder or not os.path.isdir(folder.strip()):
-            return DEFAULTS
-
-        aes_path = os.path.join(folder.strip(), _AESTHETICS_FILENAME)
-        if not os.path.exists(aes_path):
-            return DEFAULTS
-
-        try:
-            with open(aes_path, encoding="utf-8") as f:
-                a = json.load(f)
-        except Exception as e:
-            return (*DEFAULTS[:-1],
-                    dbc.Alert(f"❌ Error loading aesthetics.json: {e}",
-                              color="danger", className="py-1 mb-0"))
-
+    def load_aesthetics(selected, _reload, folder_value):
+        if not selected or selected["kind"] != "style":
+            raise PreventUpdate
+        folder   = _folder(folder_value)
+        aes_path = os.path.join(folder, _AESTHETICS_FILENAME) if folder else ""
+        if not os.path.isfile(aes_path):
+            aes_path = DEFAULT_AESTHETICS_PATH
+        if not folder:
+            note = html.Small("Built-in style (read-only) — copy the built-in charts to a "
+                              "folder to change it.", className="text-muted")
+        elif aes_path == DEFAULT_AESTHETICS_PATH:
+            note = html.Small("Showing the built-in style — saving creates aesthetics.json "
+                              "in this folder.", className="text-muted")
+        else:
+            note = ""
+        a     = _read_json(aes_path)
         font  = a.get("font", {})
         chart = a.get("chart", {})
         grid  = a.get("grid", {})
         sp    = a.get("subplot_params", {})
         leg   = a.get("legend", {})
-        res   = chart.get("resolution_px", [2560, 1440])
+        res   = chart.get("resolution_px") or [2560, 1440]
         bg    = chart.get("background_color", "#ffffff")
         gc    = grid.get("color", "#505050")
-
         return (
-            font.get("family", "sans-serif"),
-            font.get("title_size", 20),
-            font.get("axis_label_size", 15),
-            font.get("tick_size", 12),
-            font.get("legend_size", 13),
-            font.get("scale_factor", 1.0),
-            bg, bg,
-            res[0] if res else 2560, res[1] if len(res) > 1 else 1440,
-            chart.get("dpi", 96),
+            font.get("family", "sans-serif"), font.get("title_size", 20),
+            font.get("axis_label_size", 15), font.get("tick_size", 12),
+            font.get("legend_size", 13), font.get("scale_factor", 1.0),
+            bg, bg, res[0], res[1] if len(res) > 1 else 1440, chart.get("dpi", 96),
             "true" if grid.get("visible", True) else "false",
-            grid.get("axis", "both"),
-            grid.get("linestyle", "-"),
-            grid.get("alpha", 0.3),
-            grid.get("gridwidth", 1.0),
-            gc, gc,
-            sp.get("left", 0.03), sp.get("right", 0.92),
-            sp.get("top", 0.95),  sp.get("bottom", 0.06),
-            sp.get("legend_x", 0.92), sp.get("legend_y", 0.83),
-            leg.get("wrap_width", 28),
-            leg.get("pad_top", 0.5), leg.get("pad_sep_above", 0.4),
+            grid.get("axis", "both"), grid.get("linestyle", "-"),
+            grid.get("alpha", 0.3), grid.get("gridwidth", 1.0), gc, gc,
+            sp.get("left", 0.03), sp.get("right", 0.92), sp.get("top", 0.95),
+            sp.get("bottom", 0.06), sp.get("legend_x", 0.92), sp.get("legend_y", 0.83),
+            leg.get("wrap_width", 28), leg.get("pad_top", 0.5), leg.get("pad_sep_above", 0.4),
             leg.get("pad_sep_below", 0.4), leg.get("gap_slots", 0.5),
             a.get("linewidth_scale_factor", 1.0),
-            dbc.Alert("✓ Loaded aesthetics.json", color="success", className="py-1 mb-0"),
+            note,
         )
 
-    # Swatch ↔ hex sync for aesthetics bg and grid colour
-    for swatch_id, hex_id in [
-        ("aes-bg-color-swatch",   "aes-bg-color-hex"),
-        ("aes-grid-color-swatch", "aes-grid-color-hex"),
-    ]:
-        app.clientside_callback(
-            "function(v) { return v; }",
-            Output(hex_id,    "value", allow_duplicate=True),
-            Input( swatch_id, "value"),
-            prevent_initial_call=True,
-        )
-        app.clientside_callback(
-            """function(v) {
-                if (!v) return window.dash_clientside.no_update;
-                v = v.trim();
-                return /^#[0-9a-fA-F]{6}$/.test(v) ? v : window.dash_clientside.no_update;
-            }""",
-            Output(swatch_id, "value", allow_duplicate=True),
-            Input( hex_id,    "value"),
-            prevent_initial_call=True,
-        )
-
-    # ── Delete — open confirm ─────────────────────────────────────────────
+    # ── Delete (with confirmation) ───────────────────────────────────────────
     @app.callback(
         Output("cfg-confirm-delete-modal", "is_open", allow_duplicate=True),
         Output("cfg-delete-confirm-text",  "children"),
         Input("btn-cfgmgr-delete",         "n_clicks"),
-        State("store-cfgmgr-selected",     "data"),
+        State("store-cm-selected",         "data"),
         prevent_initial_call=True,
     )
     def open_delete_confirm(_, selected):
-        if not selected:
+        if not selected or selected["kind"] != "chart":
             raise PreventUpdate
-        return True, f"Are you sure you want to permanently delete \"{selected}\"?"
+        return True, f"Permanently delete \"{selected['file']}\"?"
 
-    # ── Delete — cancel ───────────────────────────────────────────────────
     @app.callback(
         Output("cfg-confirm-delete-modal", "is_open", allow_duplicate=True),
         Input("btn-cfg-cancel-delete",     "n_clicks"),
@@ -1088,33 +1099,27 @@ def register_config_manager_callbacks(app, state):
     def cancel_delete(_):
         return False
 
-    # ── Delete — confirm ──────────────────────────────────────────────────
     @app.callback(
         Output("cfg-confirm-delete-modal", "is_open",  allow_duplicate=True),
-        Output("cfgmgr-file-list",         "children", allow_duplicate=True),
-        Output("cfgmgr-action-status",     "children", allow_duplicate=True),
-        Output("store-cfgmgr-selected",    "data",     allow_duplicate=True),
-        Output("btn-cfgmgr-edit",          "disabled", allow_duplicate=True),
-        Output("btn-cfgmgr-clone",         "disabled", allow_duplicate=True),
-        Output("btn-cfgmgr-delete",        "disabled", allow_duplicate=True),
+        Output("cfgmgr-status",            "children", allow_duplicate=True),
+        Output("store-cm-selected",        "data",     allow_duplicate=True),
+        Output("store-cm-version",         "data",     allow_duplicate=True),
         Input("btn-cfg-confirm-delete",    "n_clicks"),
-        State("store-cfgmgr-selected",     "data"),
+        State("store-cm-selected",         "data"),
         State("cfgmgr-folder-path",        "value"),
+        State("store-cm-version",          "data"),
         prevent_initial_call=True,
     )
-    def confirm_delete(_, selected, folder):
-        if not selected or not folder:
+    def confirm_delete(_, selected, folder_value, version):
+        folder = _folder(folder_value)
+        if not selected or selected["kind"] != "chart" or not folder:
             raise PreventUpdate
-        path = os.path.join(folder.strip(), selected)
         try:
-            os.remove(path)
+            os.remove(os.path.join(folder, selected["file"]))
         except Exception as e:
-            status = dbc.Alert(f"❌ Delete failed: {e}",
-                               color="danger", className="py-1 mb-0")
-            return False, no_update, status, no_update, no_update, no_update, no_update
-
-        files     = _list_json_files(folder.strip())
-        file_list = _render_file_list(files, None)
-        status    = dbc.Alert(f"🗑️ Deleted: {selected}",
-                              color="warning", className="py-1 mb-0")
-        return False, file_list, status, None, True, True, True
+            return False, dbc.Alert(f"❌ Delete failed: {e}", color="danger",
+                                    className="py-1 mb-0"), no_update, no_update
+        files = [f for f in _ordered_charts(folder) if f != selected["file"]]
+        BatchProfileManager().save(folder, files)
+        return (False, dbc.Alert(f"🗑️ Deleted {selected['file']}", color="warning",
+                                 className="py-1 mb-0"), None, (version or 0) + 1)

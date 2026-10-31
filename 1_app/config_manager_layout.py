@@ -374,37 +374,30 @@ def _series_data_sections():
         ], className="mb-2"),
 
         html.Small(
-            "💡 Grid, resolution, fonts and legend are shared settings — edit them in the "
-            "Aesthetics panel above.",
+            "💡 Y limits here are the defaults — Quick Run can override them per run. "
+            "Grid, resolution, fonts and legend are shared: edit them in 🎨 Global style. "
+            "Quick Run's schedule window replaces X min / X max.",
             className="text-muted fst-italic",
         ),
     ]
 
 
-def _editor_modal_body():
-    """Return the scrollable modal body — all config sections."""
+def _chart_form():
+    """Editor form for a chart (series) config or an event-colour (gantt) config."""
     return [
         # ── Filename ────────────────────────────────────────────────────────
-        dbc.Row([
+        html.Div(id="cfg-filename-row", children=dbc.Row([
             dbc.Col([
-                dbc.Label("Filename (.json)", className="fw-semibold"),
-                dbc.Input(id="cfg-filename",
-                          placeholder="e.g. 0_config_composite_Active_Power.json",
-                          size="sm"),
-                html.Small("File will be saved to the selected config folder.",
-                           className="text-muted"),
-            ]),
-        ], className="mb-3"),
-
-        html.Hr(className="my-2"),
+                dbc.Label("File name (.json)", className="small fw-semibold"),
+                dbc.Input(id="cfg-filename", placeholder="e.g. Reactive_Power.json", size="sm"),
+            ], width=6),
+        ], className="mb-2")),
 
         # ── Config type badge + stores ───────────────────────────────────────
         html.Div(id="cfg-type-badge", className="mb-2"),
         dcc.Store(id="store-cfg-type", data=CFG_TYPE_SERIES),
         dcc.Store(id="store-gantt-color-count", data=0),
         dcc.Store(id="store-gantt-palette-count", data=0),
-
-        html.Hr(className="my-2"),
 
         # ── Metadata ────────────────────────────────────────────────────────
         dbc.Row([dbc.Col(html.H6("📝 Metadata", className="fw-bold text-primary"))]),
@@ -439,21 +432,6 @@ def _editor_modal_body():
     ]
 
 
-def _editor_modal():
-    return dbc.Modal(
-        id="cfg-editor-modal", size="xl", scrollable=True, is_open=False,
-        children=[
-            dbc.ModalHeader(dbc.ModalTitle(id="cfg-editor-title", children="New Config")),
-            dbc.ModalBody(_editor_modal_body()),
-            dbc.ModalFooter([
-                html.Div(id="cfg-save-status", className="me-auto small"),
-                dbc.Button("💾 Save", id="btn-cfg-save",   color="primary",   className="me-2"),
-                dbc.Button("Cancel",  id="btn-cfg-cancel", color="secondary"),
-            ]),
-        ],
-    )
-
-
 def _confirm_delete_modal():
     return dbc.Modal(id="cfg-confirm-delete-modal", is_open=False, children=[
         dbc.ModalHeader(dbc.ModalTitle("Confirm Delete")),
@@ -468,165 +446,14 @@ def _confirm_delete_modal():
     ])
 
 
-def _batch_profile_item(idx: int, filename: str, included: bool) -> dbc.Card:
-    """Build one sortable row for the Batch Profile list."""
-    badge_color = "primary" if included else "secondary"
-    label_style = {
-        "fontFamily": "monospace",
-        "wordBreak":  "break-all",
-        "opacity":    "1.0" if included else "0.45",
-    }
-    return dbc.Card(
-        id={"type": "bp-item-card", "index": idx},
-        className="mb-1 border-secondary",
-        children=[
-            dbc.CardBody(
-                dbc.Row([
-                    # Rank badge
-                    dbc.Col(
-                        dbc.Badge(
-                            str(idx + 1),
-                            id={"type": "bp-rank-badge", "index": idx},
-                            color=badge_color,
-                            style={"minWidth": "26px", "textAlign": "center"},
-                        ),
-                        width="auto", className="d-flex align-items-center",
-                    ),
-                    # Filename label
-                    dbc.Col(
-                        html.Span(
-                            filename,
-                            id={"type": "bp-item-label", "index": idx},
-                            className="small",
-                            style=label_style,
-                        ),
-                        className="d-flex align-items-center",
-                    ),
-                    # Include / Exclude toggle
-                    dbc.Col(
-                        dbc.Switch(
-                            id={"type": "bp-item-switch", "index": idx},
-                            value=included,
-                            label="",
-                            className="mb-0",
-                        ),
-                        width="auto",
-                        className="d-flex align-items-center",
-                    ),
-                    # Up / Down buttons
-                    dbc.Col(
-                        html.Div([
-                            dbc.Button(
-                                "▲", size="sm", color="light",
-                                id={"type": "bp-btn-up",   "index": idx},
-                                className="py-0 px-1 me-1 border",
-                                style={"lineHeight": "1.4", "fontSize": "11px"},
-                            ),
-                            dbc.Button(
-                                "▼", size="sm", color="light",
-                                id={"type": "bp-btn-down", "index": idx},
-                                className="py-0 px-1 border",
-                                style={"lineHeight": "1.4", "fontSize": "11px"},
-                            ),
-                        ], className="d-flex"),
-                        width="auto", className="d-flex align-items-center",
-                    ),
-                ], align="center", className="g-2"),
-                className="py-1 px-2",
-            ),
-        ],
-    )
-
-
-def _batch_profile_card():
-    """Return the Batch Profile dbc.Card for the Config Manager tab."""
-    return dbc.Card(className="mb-3", children=[
-        dbc.CardHeader(dbc.Row([
-            dbc.Col(html.B("📋 Batch Profile"), width="auto"),
-            dbc.Col(
-                html.Small(
-                    "Choose which configs run during a batch job and set their order.",
-                    className="text-muted",
-                ),
-                className="d-flex align-items-center ms-2",
-            ),
-            dbc.Col(html.Div([
-                dbc.Button(
-                    "💾 Save Profile", id="btn-bp-save",
-                    color="primary", size="sm", className="me-1",
-                ),
-                dbc.Button(
-                    "↺ Reset to Default", id="btn-bp-reset",
-                    color="secondary", size="sm", outline=True,
-                ),
-            ], className="d-flex"), className="ms-auto", width="auto"),
-        ], align="center", justify="between")),
-
-        dbc.CardBody([
-            # Status / save feedback
-            html.Div(id="bp-status", className="mb-2 small"),
-
-            # Summary bar — shows counts + colour-coded file badges
-            html.Div(
-                id="bp-summary-bar",
-                className="mb-2",
-                children=html.Small(
-                    "Load a config folder above to build the profile.",
-                    className="text-muted",
-                ),
-            ),
-
-            # Sortable list (▲▼ buttons only — no drag-and-drop)
-            html.Div(
-                id="bp-item-list",
-                style={"maxHeight": "360px", "overflowY": "auto"},
-                children=[
-                    html.P("No folder loaded.", className="text-muted small mb-0"),
-                ],
-            ),
-
-            html.Hr(className="my-2"),
-
-            # Numbered run-order preview
-            html.Div([
-                html.B("Run order: ", className="small"),
-                html.Span(
-                    id="bp-order-preview",
-                    className="small text-muted",
-                    children="—",
-                ),
-            ]),
-
-            # Hidden stores
-            dcc.Store(id="store-bp-order",  data=[]),  # list of {filename, included}
-            dcc.Store(id="store-bp-folder", data=""),  # folder that was last loaded
-        ]),
-    ])
-
-
-def _aesthetics_card():
-    """Dedicated inline editor card for aesthetics.json — always visible in Config Manager."""
-    return dbc.Card(className="mb-3 border-warning", children=[
-        dbc.CardHeader(dbc.Row([
-            dbc.Col(html.B("🎨 Aesthetics"), width="auto"),
-            dbc.Col(
-                html.Small(
-                    "Shared visual settings for all charts — fonts, resolution, grid, legend. "
-                    "Saved to aesthetics.json in the config folder.",
-                    className="text-muted",
-                ),
-                className="d-flex align-items-center ms-2",
-            ),
-            dbc.Col(
-                dbc.Button("💾 Save aesthetics.json", id="btn-aes-save",
-                           color="warning", size="sm"),
-                className="ms-auto", width="auto",
-            ),
-        ], align="center", justify="between")),
-
-        dbc.CardBody([
+def _aesthetics_form():
+    """Editor form for aesthetics.json (🎨 Global style) — shared by every chart."""
+    return html.Div([
+        html.Small("Shared by every chart — fonts, image size, grid, legend. "
+                   "Saved as aesthetics.json in the config folder.",
+                   className="text-muted d-block mb-2"),
+        html.Div([
             html.Div(id="aes-load-status", className="mb-2 small"),
-            html.Div(id="aes-save-status", className="mb-2 small"),
 
             # ── Font ────────────────────────────────────────────────────
             dbc.Row([dbc.Col(html.H6("🔤 Font", className="fw-bold text-warning"))]),
@@ -766,79 +593,81 @@ def _aesthetics_card():
 
 
 
+
+
 def config_manager_tab():
-    """Return the ⚙️ Config Manager dbc.Tab."""
+    """⚙️ Config Manager: one list (Global style, Event colours, every chart)
+    on the left, the editor for the selected entry on the right."""
+    top = dbc.Card(className="mb-2", children=dbc.CardBody(className="py-2", children=[
+        dbc.Row([
+            dbc.Col(dbc.Label("Config folder", className="small mb-0 fw-semibold"), width="auto"),
+            dbc.Col(dbc.InputGroup([
+                dbc.Input(id="cfgmgr-folder-path", size="sm", debounce=True,
+                          placeholder="Empty = built-in charts (read-only). "
+                                      "Pick a folder to customise them."),
+                dbc.Button("📁 Browse", id="btn-cfgmgr-browse", color="secondary", size="sm"),
+                dbc.Button("🔄", id="btn-cfgmgr-refresh", color="secondary", outline=True,
+                           size="sm", title="Re-read the folder"),
+            ], size="sm")),
+            dbc.Col(dbc.Button("Use built-in charts", id="btn-cfgmgr-builtin", color="link",
+                               size="sm", className="p-0"), width="auto"),
+            dbc.Col(dbc.Button("Copy built-in charts to a folder…", id="btn-cfgmgr-copy",
+                               color="link", size="sm", className="p-0"), width="auto"),
+        ], className="g-2 align-items-center"),
+        html.Div(id="cfgmgr-folder-status", className="small text-muted mt-1"),
+    ]))
+
+    listing = dbc.Card(className="mb-2", children=[
+        dbc.CardHeader(dbc.Row([
+            dbc.Col(html.B("Settings & charts"), width="auto"),
+            dbc.Col(dbc.Button("➕ New chart", id="btn-cfgmgr-new", color="primary", size="sm"),
+                    width="auto", className="ms-auto"),
+        ], align="center"), className="py-1"),
+        dbc.CardBody(html.Div(id="cfgmgr-list"), className="p-0 cm-pane"),
+    ])
+
+    editor = dbc.Card(className="mb-2", children=[
+        dbc.CardHeader(dbc.Row([
+            dbc.Col(html.B(id="cfg-editor-title", children="Select an entry on the left"),
+                    className="text-truncate"),
+            dbc.Col(html.Div([
+                html.Span(id="cm-dirty-note", className="small text-warning fw-bold me-2"),
+                html.Span(id="cfg-save-status", className="small me-2"),
+                dbc.Button("📋 Clone", id="btn-cfgmgr-clone", color="info", outline=True,
+                           size="sm", className="me-1", style={"display": "none"}),
+                dbc.Button("🗑️ Delete", id="btn-cfgmgr-delete", color="danger", outline=True,
+                           size="sm", className="me-1", style={"display": "none"}),
+                dbc.Button("↺ Revert", id="btn-cm-revert", color="secondary", outline=True,
+                           size="sm", className="me-1", style={"display": "none"}),
+                dbc.Button("💾 Save", id="btn-cfg-save", color="primary", size="sm",
+                           style={"display": "none"}),
+                dbc.Button("💾 Save", id="btn-aes-save", color="primary", size="sm",
+                           style={"display": "none"}),
+            ], className="d-flex align-items-center justify-content-end"), width="auto"),
+        ], align="center"), className="py-1"),
+        dbc.CardBody(className="cm-pane", children=[
+            html.Div(id="cm-placeholder", className="text-muted small", children=(
+                "Each row on the left is one settings file. Click a row to edit it here.")),
+            html.Div(id="cm-chart-editor", style={"display": "none"}, children=_chart_form()),
+            html.Div(id="cm-style-editor", style={"display": "none"}, children=_aesthetics_form()),
+        ]),
+    ])
+
     return dbc.Tab(label="⚙️ Config Manager", tab_id="tab-config-manager", children=[
-        dbc.Container(fluid=True, children=[
-
-            # ── Folder selector ──────────────────────────────────────────
-            dbc.Card(className="mb-3", children=[
-                dbc.CardHeader(html.B("Config Folder")),
-                dbc.CardBody([
-                    dbc.Row([
-                        dbc.Col(dbc.Label("Folder Path:"), width=2),
-                        dbc.Col(
-                            dbc.Input(id="cfgmgr-folder-path",
-                                      placeholder="e.g. 5_configs/  or  C:\\my_configs",
-                                      size="sm"),
-                            width=True,
-                        ),
-                        dbc.Col(html.Div([
-                            dbc.Button("📁 Browse", id="btn-cfgmgr-browse",
-                                       color="secondary", size="sm", className="me-1"),
-                        ], className="d-flex align-items-center"), width="auto"),
-                        dbc.Col(
-                            dbc.Button("🔄 Refresh", id="btn-cfgmgr-refresh",
-                                       color="info", size="sm", outline=True),
-                            width="auto",
-                        ),
-                    ], className="mb-2 align-items-center"),
-                    html.Div(id="cfgmgr-folder-status", className="text-muted small"),
-                ]),
-            ]),
-
-            # ── Batch Profile ────────────────────────────────────────────
-            _batch_profile_card(),
-
-            # ── Aesthetics ───────────────────────────────────────────────
-            _aesthetics_card(),
-
-            # ── File list + action toolbar ───────────────────────────────
-            dbc.Card(className="mb-3", children=[
-                dbc.CardHeader(dbc.Row([
-                    dbc.Col(html.B("Config Files"), width="auto"),
-                    dbc.Col(html.Div([
-                        dbc.Button("➕ New",       id="btn-cfgmgr-new",
-                                   color="primary",   size="sm", className="me-1"),
-                        dbc.Button("✏️ Edit",      id="btn-cfgmgr-edit",
-                                   color="secondary", size="sm",
-                                   className="me-1", disabled=True),
-                        dbc.Button("📋 Clone",     id="btn-cfgmgr-clone",
-                                   color="info",      size="sm", outline=True,
-                                   className="me-1",  disabled=True),
-                        dbc.Button("🗑️ Delete",    id="btn-cfgmgr-delete",
-                                   color="danger",    size="sm", outline=True,
-                                   disabled=True),
-                    ], className="d-flex"), className="ms-auto", width="auto"),
-                ], align="center", justify="between")),
-                dbc.CardBody([
-                    html.Div(id="cfgmgr-action-status", className="mb-2 small"),
-                    html.Div(
-                        id="cfgmgr-file-list",
-                        style={"maxHeight": "380px", "overflowY": "auto"},
-                        children=[
-                            html.P("No folder loaded. Set a folder path above and click Refresh.",
-                                   className="text-muted small"),
-                        ],
-                    ),
-                ]),
-            ]),
-
-            # Stores
-            dcc.Store(id="store-cfgmgr-selected",  data=None),
+        dbc.Container(fluid=True, style={"maxWidth": "1600px"}, children=[
+            top,
+            html.Div(id="cfgmgr-status", className="small mb-1"),
+            dbc.Row([
+                dbc.Col(listing, lg=5),
+                dbc.Col(editor, lg=7),
+            ], className="g-2"),
+            dcc.Store(id="store-cm-selected", data=None),   # {"kind": style|events|chart|new, "file"}
+            dcc.Store(id="store-cm-version", data=0),       # bump → list re-renders
+            dcc.Store(id="store-cm-reload", data=0),        # bump → editor reloads from disk
             dcc.Store(id="store-cfgmgr-edit-mode", data=None),
-
-            _editor_modal(),
+            dcc.Store(id="store-cm-copy-target", data=None),
+            dcc.Store(id="store-cm-dirty", data=False),     # editor has unsaved edits
+            dcc.Store(id="store-cm-guard", data=None),
             _confirm_delete_modal(),
         ]),
     ])

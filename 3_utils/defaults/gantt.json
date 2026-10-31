@@ -1,39 +1,35 @@
 {
-  "_description": "Shared Gantt/Event overlay config — applies to ALL data type plots (frequency, voltage, current, etc.)",
-  "_usage": "Load this file using the 'Browse Gantt Config...' button in the GUI. Settings here always override any gantt/gantt_colors sections in the data config.",
+  "_description": "Muted event layer: slate-blue dashed start/end lines and arrows, IDs as soft tags (pale slate fill, navy text) so the data lines stay the strongest colour.",
+  "_usage": "Built-in event colours. Overridden by gantt.json in a config folder, or by this PC's copy saved from Config Manager (%APPDATA%\\TrendGraph\\gantt.json).",
   "gantt": {
     "bar_alpha": 0.1,
     "bar_height_ratio": 1.0,
     "edge_color": "#000000",
-    "edge_width": 0.2
+    "edge_width": 0.2,
+    "label_color": "#2F3E55",
+    "label_bg": "#E6EBF2",
+    "label_border": "#E6EBF2",
+    "edge_dash": "dash",
+    "normalization_color": "#7B8CA6"
   },
   "gantt_colors": {
-    "HLT7": "#56b36d",
-    "HLT8": "#304cd9",
-    "HLT9": "#93a02c",
-    "HLT13": "#d62728",
-    "HLT14": "#9467bd",
-    "HLT15": "#8c564b",
-    "HLT16": "#e377c2",
-    "HLT17": "#7f7f7f",
-    "HLT18": "#39d5bb",
-    "HLT19": "#17becf",
-    "HLT20": "#1a9850",
-    "HLT21": "#d73027",
-    "HLT22": "#fee090",
-    "HLT23": "#4575b4",
-    "UNASSIGNED": "#808080",
+    "HLT7": "#7B8CA6",
+    "HLT8": "#7B8CA6",
+    "HLT9": "#7B8CA6",
+    "HLT13": "#7B8CA6",
+    "HLT14": "#7B8CA6",
+    "HLT15": "#7B8CA6",
+    "HLT16": "#7B8CA6",
+    "HLT17": "#7B8CA6",
+    "HLT18": "#7B8CA6",
+    "HLT19": "#7B8CA6",
+    "HLT20": "#7B8CA6",
+    "HLT21": "#7B8CA6",
+    "HLT22": "#7B8CA6",
+    "HLT23": "#7B8CA6",
+    "UNASSIGNED": "#7B8CA6",
     "default_palette": [
-      "#1f77b4",
-      "#ff7f0e",
-      "#2ca02c",
-      "#d62728",
-      "#9467bd",
-      "#8c564b",
-      "#e377c2",
-      "#7f7f7f",
-      "#bcbd22",
-      "#17becf"
+      "#7B8CA6"
     ]
   }
 }

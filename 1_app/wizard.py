@@ -11,7 +11,7 @@ in the row's unit (e.g. kW) and converts back when a run starts.
 Folders, the event file, chart selection and Y limits are remembered in
 %APPDATA%/TrendGraph/settings.json, so a repeat run is: open app → Generate.
 The bundled default charts are used unless a custom config folder has been
-chosen in the Advanced → Config Manager tab.
+chosen in the Config Manager tab.
 """
 import io
 import os
@@ -26,7 +26,7 @@ import dash_bootstrap_components as dbc
 from flask import send_file
 
 from utils.constants import (
-    DEFAULT_CONFIGS_DIR, DEFAULT_PPT_TEMPLATE_PATH, RESERVED_CONFIG_FILENAMES,
+    BATCH_WORKERS, DEFAULT_CONFIGS_DIR, DEFAULT_PPT_TEMPLATE_PATH, RESERVED_CONFIG_FILENAMES,
     load_settings, save_settings,
 )
 from backend.batch_profile import BatchProfileManager
@@ -111,8 +111,10 @@ def _num(v):
         return None
 
 
-def _step_card(number, title, body, status_id):
-    return dbc.Card(className="mb-3", children=[
+def _step_card(number, title, body, status_id, fill=False):
+    """fill=True: the card takes the column's leftover height and its body
+    scrolls (bento layout, lg screens — see 4_assets/app.css)."""
+    return dbc.Card(className="mb-2" + (" qr-fill" if fill else ""), children=[
         dbc.CardHeader(html.Div([
             dbc.Badge(str(number), color="primary", pill=True, className="me-2"),
             html.B(title),
@@ -153,31 +155,32 @@ def wizard_tab():
                   'Select the test schedule (.csv or .xlsx)…', s.get('wz_event_path', '')),
         html.Div(id='wz-event-info', className="small text-muted mb-2"),
         dbc.Row([
-            dbc.Col(dbc.Label("Plot from", className="small mb-0"), width='auto'),
-            dbc.Col(dbc.Input(id='wz-x-min', size='sm', placeholder='YYYY-MM-DD HH:MM'), width=3),
+            dbc.Col(html.Label("Plot from ⓘ", className="small mb-0",
+                               title="Filled in from the schedule: first event start → last "
+                                    "event end. Type other times if needed."), width='auto'),
+            dbc.Col(dbc.Input(id='wz-x-min', size='sm', placeholder='YYYY-MM-DD HH:MM')),
             dbc.Col(dbc.Label("to", className="small mb-0"), width='auto'),
-            dbc.Col(dbc.Input(id='wz-x-max', size='sm', placeholder='YYYY-MM-DD HH:MM'), width=3),
+            dbc.Col(dbc.Input(id='wz-x-max', size='sm', placeholder='YYYY-MM-DD HH:MM')),
         ], className="align-items-center g-2"),
-        html.Small("Filled in from the schedule: first event start → last event end. "
-                   "Type other times if needed.", className="text-muted d-block mt-1"),
     ], 'wz-step1-badge')
 
     step2 = _step_card(2, "Analyser data", [
         _path_row('wz-data-folder', 'wz-browse-data',
                   'Folder with the analyser exports (.csv / .txt)…', s.get('wz_data_folder', '')),
         dbc.Row([
-            dbc.Col(dbc.Label("System wiring", className="small mb-0"), width='auto'),
+            dbc.Col(html.Label("Wiring ⓘ", className="small mb-0",
+                               title="Voltage and THD charts show phase-to-neutral (AN/BN/CN) "
+                                    "for 4-wire, line-to-line (AB/BC/CA) for 3-wire."),
+                    width='auto'),
             dbc.Col(dbc.RadioItems(
                 id='wz-system', inline=True, className="small",
                 options=[{'label': '3-phase 4-wire (with N)',    'value': '3P4W'},
                          {'label': '3-phase 3-wire (without N)', 'value': '3P3W'}],
                 value=s.get('wz_system', '3P4W') if s.get('wz_system') in SYSTEMS else '3P4W',
             )),
-        ], className="align-items-center mb-1 g-2"),
-        html.Small("Voltage and THD charts show phase-to-neutral (AN/BN/CN) for 4-wire, "
-                   "line-to-line (AB/BC/CA) for 3-wire.", className="text-muted d-block mb-2"),
+        ], className="align-items-center mb-2 g-2"),
         html.Div(id='wz-data-info', className="small"),
-    ], 'wz-step2-badge')
+    ], 'wz-step2-badge', fill=True)
 
     step3 = _step_card(3, "Charts & output", [
         _path_row('wz-output-folder', 'wz-browse-output',
@@ -208,12 +211,18 @@ def wizard_tab():
                          style={'height': '20px'}),
             html.Small(id='wz-progress-label', className="text-muted"),
         ]),
-        html.Div(id='wz-results', className="mt-3"),
-    ], 'wz-step3-badge')
+        html.Div(id='wz-results', className="mt-2"),
+    ], 'wz-step3-badge', fill=True)
 
+    # Bento trio: steps 1 + 2 stacked on the left, step 3 on the right.
+    # On lg+ screens the row is exactly one viewport tall and only the card
+    # bodies scroll; below lg the columns stack (4_assets/app.css).
     return dbc.Tab(label="🚀 Quick Run", tab_id="tab-wizard", children=[
-        dbc.Container(fluid=True, style={'maxWidth': '1100px'}, children=[
-            step1, step2, step3,
+        dbc.Container(fluid=True, style={'maxWidth': '1600px'}, children=[
+            dbc.Row([
+                dbc.Col([step1, step2], lg=5, className="qr-col"),
+                dbc.Col(step3, lg=7, className="qr-col"),
+            ], className="qr-bento g-2"),
             dcc.Store(id='wz-y-defaults'),     # {file: [y_min, y_max]} from chart configs
             dcc.Store(id='wz-run-token'),      # bumps when a run finishes (results refresh)
             dcc.Interval(id='wz-interval', interval=1000, disabled=True),
@@ -271,7 +280,7 @@ def _chart_table(entries, saved_limits, saved_included, saved_units):
 
 def register_wizard_callbacks(app, state):
 
-    # ── Browse buttons (same Flask picker endpoints as the Advanced tabs) ────
+    # ── Browse buttons (Flask picker endpoints, see routes.py) ───────────────
     for btn_id, inp_id, url in [
         ('wz-browse-event',  'wz-event-path',    '/api/pick-file?kind=events&save=false'),
         ('wz-browse-data',   'wz-data-folder',   '/api/pick-folder?title=Select%20Data%20Folder'),
@@ -403,7 +412,7 @@ def register_wizard_callbacks(app, state):
             save_settings(wz_y_limits={}, wz_units={})
         included = s.get('wz_charts')
         source = ("Using built-in charts." if folder == DEFAULT_CONFIGS_DIR else
-                  f"Using custom charts from {folder} (change in Advanced → Config Manager).")
+                  f"Using custom charts from {folder} (change in Config Manager).")
         defaults = {e['file']: [e['y_min'], e['y_max']] for e in entries}
         return _chart_table(entries, limits, included, units), source, defaults
 
@@ -488,12 +497,11 @@ def register_wizard_callbacks(app, state):
         State({'type': 'wz-yauto', 'file': ALL}, 'value'),
         State({'type': 'wz-unit', 'file': ALL}, 'value'),
         State({'type': 'wz-inunit', 'file': ALL}, 'children'),
-        State('batch-workers', 'value'),
         State('wz-system', 'value'),
         prevent_initial_call=True,
     )
     def run(_, event_path, data_folder, out_folder, x_min, x_max,
-            ons, ids, ymins, ymaxs, autos, unit_choices, in_units, workers, system):
+            ons, ids, ymins, ymaxs, autos, unit_choices, in_units, system):
         if state.batch_running:
             raise PreventUpdate
 
@@ -534,21 +542,39 @@ def register_wizard_callbacks(app, state):
         state.batch_result  = None
         state.batch_stop_event.clear()
         state.batch_log.clear()
+        with state.results_lock:
+            state.results     = []
+            state.results_ctx = None
+
+        def _output(out_path, data_path, cfg_path):
+            # Results viewer streams these in; 'order' restores work order
+            # (data file × chart) since workers finish out of order.
+            entry = {'path': out_path,
+                     'data_file': os.path.basename(data_path),
+                     'chart': os.path.splitext(os.path.basename(cfg_path))[0],
+                     'cfg_path': cfg_path, 'data_path': data_path,
+                     'order': data_files.index(data_path) * len(config_files)
+                              + config_files.index(cfg_path)}
+            with state.results_lock:
+                state.results.append(entry)
+                state.results.sort(key=lambda e: e['order'])
 
         def _done(result):
+            state.results_ctx   = result.get('run_ctx')
             state.batch_result  = result
             state.batch_running = False
 
         threading.Thread(
             target=_run_batch_worker,
             args=(config_files, data_files, event_path, out_folder, total,
-                  max(1, min(16, int(workers or 4))), state.logger, state.gantt_config,
+                  BATCH_WORKERS, state.logger, state.refresh_gantt(folder),
                   state.batch_log, state.batch_stop_event, _done, None),
             kwargs={'aesthetics_path': _aesthetics_for(folder),
                     'axis_overrides':  overrides,
                     'x_window':        x_window,
                     'system':          system or '3P4W',
-                    'units':           units},
+                    'units':           units,
+                    'on_output':       _output},
             daemon=True,
         ).start()
         return False, ""
@@ -606,7 +632,7 @@ def register_wizard_callbacks(app, state):
         if not r:
             raise PreventUpdate
         if r.get('failed'):
-            return dbc.Alert(f"The run failed — {r.get('reason') or 'see the batch log in Advanced'}",
+            return dbc.Alert(f"The run failed — {r.get('reason') or 'see the run log in the Results tab'}",
                              color="danger")
         n_ok = len(r.get('outputs', []))
         head = (f"⚠ Stopped — {n_ok} image(s) saved." if r.get('stopped') else
@@ -620,6 +646,8 @@ def register_wizard_callbacks(app, state):
             html.Div(head, className="mb-2"),
             *fails,
             *warn,
+            dbc.Button("🔍 View results", id='wz-view-results', color='dark', size='sm',
+                       className='me-2', disabled=not n_ok),
             dbc.Button("📂 Open folder", id='wz-open-folder', color='secondary', size='sm',
                        className='me-2'),
             dbc.Button("📑 Build PowerPoint", id='wz-build-ppt', color='primary', size='sm',
@@ -629,6 +657,16 @@ def register_wizard_callbacks(app, state):
             html.Div(id='wz-ppt-status', className="mt-2"),
             dcc.Interval(id='wz-ppt-interval', interval=1000, disabled=True),
         ], color='success' if not (r.get('errors') or r.get('stopped') or warn) else 'warning')
+
+    @app.callback(
+        Output('main-tabs', 'active_tab', allow_duplicate=True),
+        Input('wz-view-results', 'n_clicks'),
+        prevent_initial_call=True,
+    )
+    def view_results(n):
+        if not n:
+            raise PreventUpdate
+        return 'tab-results'
 
     @app.callback(
         Output('wz-ppt-status', 'children', allow_duplicate=True),
@@ -689,7 +727,7 @@ def register_wizard_callbacks(app, state):
                               html.A(dbc.Button("⬇ Download PPTX", color='link', size='sm'),
                                      href='/api/wizard/pptx', download=True)]),
                     True, False)
-        return (html.Small("✗ PowerPoint build failed — see the PPT Builder log in Advanced.",
+        return (html.Small("✗ PowerPoint build failed — see the log in the PowerPoint tab.",
                            className="text-danger"), True, False)
 
     # ── Download routes ──────────────────────────────────────────────────────

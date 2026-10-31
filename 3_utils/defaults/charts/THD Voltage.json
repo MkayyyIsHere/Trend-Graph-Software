@@ -6,31 +6,31 @@
   "series": [
     {
       "name": "THDv AB",
-      "line_color": "#d62728",
-      "linewidth": 1.5,
+      "line_color": "#F50057",
+      "linewidth": 2.0,
       "linestyle": "-",
-      "alpha": 0.8,
+      "alpha": 1.0,
       "marker": "none"
     },
     {
       "name": "THDv BC",
-      "line_color": "#2ca02c",
-      "linewidth": 1.5,
+      "line_color": "#2962FF",
+      "linewidth": 2.0,
       "linestyle": "-",
-      "alpha": 0.8,
+      "alpha": 1.0,
       "marker": "none"
     },
     {
       "name": "THDv CA",
-      "line_color": "#ff7f0e",
-      "linewidth": 1.5,
+      "line_color": "#FF8F00",
+      "linewidth": 2.0,
       "linestyle": "-",
-      "alpha": 0.8,
+      "alpha": 1.0,
       "marker": "none"
     }
   ],
   "chart": {
-    "title": "THD Voltage Over Time with Events"
+    "title": "Voltage THD Trend"
   },
   "axis": {
     "x_label": "Date & Time",

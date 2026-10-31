@@ -212,6 +212,20 @@ def build_plotly_figure(config: ConfigManager,
     annotations: List[dict] = []
 
     # Assign colors & collect task data
+    # Optional event styling (gantt.json → gantt); each falls back to the
+    # original look: label_color = ID text in chart labels and legend (else the
+    # event's colour), label_bg / label_border = ID box fill / border,
+    # edge_dash = start/end line style ('solid', 'dash', 'dot', …),
+    # legend_id_color = ID text in the legend only (default label_color).
+    gopts        = (gantt_config.get_gantt_config()
+                    if gantt_config and gantt_config.is_loaded() else {})
+    label_color  = gopts.get('label_color') or None
+    label_bg     = gopts.get('label_bg') or 'rgba(255,255,255,0.85)'
+    label_border = gopts.get('label_border') or None
+    edge_dash    = gopts.get('edge_dash') or 'solid'
+    legend_id_color = gopts.get('legend_id_color') or label_color   # e.g. badge labels
+    norm_color   = gopts.get('normalization_color') or None   # '(N)' events; default grey
+
     task_data = []
     for task in tasks:
         if gantt_config and gantt_config.is_loaded():
@@ -222,7 +236,11 @@ def build_plotly_figure(config: ConfigManager,
                 color_idx += 1
             color = task_colors[task.test_id]
 
-        if task.is_normalization:
+        if task.is_normalization and norm_color:
+            fill_rgba = 'rgba(0,0,0,0)'
+            edge_rgba = _hex_to_rgba(norm_color, 0.70)
+            color     = norm_color
+        elif task.is_normalization:
             fill_rgba = 'rgba(0,0,0,0)'
             edge_rgba = 'rgba(128,128,128,0.35)'
             color     = '#808080'
@@ -242,7 +260,7 @@ def build_plotly_figure(config: ConfigManager,
                 x0=edge_t, x1=edge_t,
                 y0=0, y1=1,
                 xref='x', yref='y domain',
-                line=dict(color=edge_rgba, width=1),
+                line=dict(color=edge_rgba, width=1, dash=edge_dash),
                 layer='below',
             ))
 
@@ -348,11 +366,11 @@ def build_plotly_figure(config: ConfigManager,
             xref='x', yref='y',
             text=f'<b>{task.display_id}</b>',
             showarrow=False,
-            font=dict(size=label_fs, color=color,
+            font=dict(size=label_fs, color=label_color or color,
                       family=rc.get('legend_font_family', 'sans-serif')),
             xanchor='left', yanchor='bottom',
-            bgcolor='rgba(255,255,255,0.85)',
-            bordercolor=color,
+            bgcolor=label_bg,
+            bordercolor=label_border or color,
             borderwidth=0.8,
             borderpad=2,
         ))
@@ -574,7 +592,7 @@ def build_plotly_figure(config: ConfigManager,
         wrapped_desc = _textwrap.wrap(task.description or '', wrap_w) or ['']
         desc_html    = '<br>'.join(wrapped_desc)
         lines_html.append(
-            f'<b><span style="color:{t_color}">{task.display_id}</span></b>  {desc_html}'
+            f'<b><span style="color:{legend_id_color or t_color}">{task.display_id}</span></b>  {desc_html}'
         )
 
     legend_text = '<br>'.join(lines_html)

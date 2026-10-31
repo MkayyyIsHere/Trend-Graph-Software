@@ -1,0 +1,35 @@
+/* 4_assets/app.css — layout rules Dash loads automatically. */
+
+/* ── Quick Run bento: steps 1+2 left, step 3 right, no page scroll ─────── */
+@media (min-width: 992px) {
+  .qr-bento               { height: calc(100vh - 120px); }
+  .qr-bento > .qr-col     { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  .qr-fill                { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .qr-fill > .card-body   { overflow-y: auto; min-height: 0; }
+}
+
+/* ── Results viewer ───────────────────────────────────────────────────── */
+.rs-stage {
+  height: calc(100vh - 330px); min-height: 320px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f4f6f8; border-radius: 6px; overflow: hidden;
+}
+.rs-stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.rs-strip     { display: flex; gap: 6px; overflow-x: auto; padding: 6px 2px; }
+.rs-thumb {
+  flex: 0 0 auto; width: 128px; cursor: pointer; border: 2px solid transparent;
+  border-radius: 4px; background: #fff; padding: 2px; text-align: center;
+}
+.rs-thumb img        { width: 120px; height: 68px; object-fit: contain; display: block; }
+.rs-thumb small      { display: block; font-size: 10px; white-space: nowrap; overflow: hidden;
+                       text-overflow: ellipsis; color: #555; }
+.rs-thumb.active     { border-color: #2c3e50; }
+.rs-thumb:hover      { border-color: #95a5a6; }
+
+/* ── Config Manager list ──────────────────────────────────────────────── */
+.cm-row        { cursor: pointer; }
+.cm-row.active { background: #e8f0f7; border-left: 3px solid #2c3e50 !important; }
+.cm-chip       { font-weight: normal; font-size: 10.5px; }
+@media (min-width: 992px) {
+  .cm-pane     { height: calc(100vh - 200px); overflow-y: auto; }
+}
